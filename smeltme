@@ -3,13 +3,16 @@
 Parse https://smelt.suse.de/overview/ for specified groups
 """
 
+import argparse
 import json
+import ssl
 import sys
 
 from datetime import datetime
 from itertools import zip_longest
 from urllib.request import urlopen
 
+__version__ = "0.1.0"
 
 GROUPS = {'qam-ha', 'qam-sap'}
 URL = "https://smelt.suse.de/api/v1/overview/testing/"
@@ -19,14 +22,18 @@ def main():
     """
     Main function
     """
+    ctx = ssl.create_default_context()
+    if opts.insecure:
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
     fmt = "%-30s %-10s %-11s %-4s %-4s %-7s %-20s %-40s %-20s"
     print(fmt % (
         "ID", "SIZE", "CREATED", "DUE", "PRIO", "GROUP", "PACKAGES", "PRODUCTS", "REFERENCES"))
-    with urlopen(URL) as conn:
+    with urlopen(URL, context=ctx) as conn:
         data = json.loads(conn.read())
     results = data['results']
     while data['next'] is not None:
-        with urlopen(data['next']) as conn:
+        with urlopen(data['next'], context=ctx) as conn:
             data = json.loads(conn.read())
         results += data['results']
     for item in results:
@@ -50,7 +57,22 @@ def main():
                 print("%71s %-20s %-40s %-20s" % (" ", package, product, reference))
 
 
+def parse_opts():
+    """
+    Parse options and arguments
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '-k', '--insecure', action='store_true',
+        help="Allow insecure server connections when using SSL")
+    parser.add_argument(
+        '-V', '--version', action='store_true',
+        help="Show version and exit")
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
+    opts = parse_opts()
     try:
         main()
     except KeyboardInterrupt:

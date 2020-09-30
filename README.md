@@ -6,6 +6,10 @@ Parse https://smelt.suse.de/overview/ for specified groups
 
 - Python 3
 
-## Usage
+## Options
 
-`./smeltme`
+```
+  -h, --help      show this help message and exit
+  -k, --insecure  Allow insecure server connections when using SSL
+  -V, --version   Show version and exit
+```

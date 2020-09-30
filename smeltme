@@ -14,7 +14,7 @@ from urllib.request import urlopen
 
 __version__ = "0.1.0"
 
-GROUPS = {'qam-ha', 'qam-sap'}
+GROUPS = ['qam-ha', 'qam-sap']
 URL = "https://smelt.suse.de/api/v1/overview/testing/"
 
 
@@ -39,7 +39,7 @@ def main():
     for item in results:
         if item['unfinished_reviews'][0]['assigned_by_group'] is None:
             continue
-        if item['unfinished_reviews'][0]['assigned_by_group']['name'] in GROUPS:
+        if item['unfinished_reviews'][0]['assigned_by_group']['name'] in opts.groups:
             id_rr = "%s:%s" % (item['incident']['project'], item['request_id'])
             # rating = item['incident']['rating']['name']
             size = "%s %s" % (item['incident']['testsize'], item['incident']['testcomplexity'])
@@ -63,6 +63,9 @@ def parse_opts():
     """
     parser = argparse.ArgumentParser()
     parser.add_argument(
+        '-g', '--groups', action='append',
+        help="Filter by group. May be specified multiple times")
+    parser.add_argument(
         '-k', '--insecure', action='store_true',
         help="Allow insecure server connections when using SSL")
     parser.add_argument(
@@ -73,6 +76,8 @@ def parse_opts():
 
 if __name__ == "__main__":
     opts = parse_opts()
+    if not opts.groups:
+        opts.groups = GROUPS
     try:
         main()
     except KeyboardInterrupt:

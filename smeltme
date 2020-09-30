@@ -12,7 +12,7 @@ from datetime import datetime
 from itertools import zip_longest
 from urllib.request import urlopen
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 GROUPS = ['qam-ha', 'qam-sap']
 URL = "https://smelt.suse.de/api/v1/overview/testing/"

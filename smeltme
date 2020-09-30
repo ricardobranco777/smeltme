@@ -25,8 +25,9 @@ def main():
     Main function
     """
     fmt = "%-30s %-10s %-11s %-4s %-4s %-7s %-20s %-40s %-20s"
-    print(fmt % (
-        "ID", "SIZE", "CREATED", "DUE", "PRIO", "GROUP", "PACKAGES", "PRODUCTS", "REFERENCES"))
+    if not opts.no_header:
+        print(fmt % (
+            "ID", "SIZE", "CREATED", "DUE", "PRIO", "GROUP", "PACKAGES", "PRODUCTS", "REFERENCES"))
     with urlopen(URL, context=ctx) as conn:
         data = json.loads(conn.read())
     results = data['results']
@@ -63,6 +64,9 @@ def parse_opts():
     parser.add_argument(
         '-g', '--groups', action='append',
         help="Filter by group. May be specified multiple times")
+    parser.add_argument(
+        '-H', '--no-header', action='store_true',
+        help="Do not show header")
     parser.add_argument(
         '-k', '--insecure', action='store_true',
         help="Allow insecure server connections when using SSL")

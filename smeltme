@@ -1,0 +1,57 @@
+#!/usr/bin/python3
+"""
+Parse https://smelt.suse.de/overview/ for specified groups
+"""
+
+import json
+import sys
+
+from datetime import datetime
+from itertools import zip_longest
+from urllib.request import urlopen
+
+
+GROUPS = {'qam-ha', 'qam-sap'}
+URL = "https://smelt.suse.de/api/v1/overview/testing/"
+
+
+def main():
+    """
+    Main function
+    """
+    fmt = "%-30s %-10s %-11s %-4s %-4s %-7s %-20s %-40s %-20s"
+    print(fmt % (
+        "ID", "SIZE", "CREATED", "DUE", "PRIO", "GROUP", "PACKAGES", "PRODUCTS", "REFERENCES"))
+    with urlopen(URL) as conn:
+        data = json.loads(conn.read())
+    results = data['results']
+    while data['next'] is not None:
+        with urlopen(data['next']) as conn:
+            data = json.loads(conn.read())
+        results += data['results']
+    for item in results:
+        if item['unfinished_reviews'][0]['assigned_by_group'] is None:
+            continue
+        if item['unfinished_reviews'][0]['assigned_by_group']['name'] in GROUPS:
+            id_rr = "%s:%s" % (item['incident']['project'], item['request_id'])
+            # rating = item['incident']['rating']['name']
+            size = "%s %s" % (item['incident']['testsize'], item['incident']['testcomplexity'])
+            created = item['created'][:10]
+            enddate = datetime.strptime(item['incident']['deadline'], "%Y-%m-%dT%H:%M:%SZ") - datetime.now()
+            due = "%dd" % enddate.days
+            priority = item['incident']['priority']
+            group = item['unfinished_reviews'][0]['assigned_by_group']['name']
+            packages = item['packages']
+            products = item['channellist']
+            references = [_['url'] for _ in item['references']]
+            print(fmt % (
+                id_rr, size, created, due, priority, group, packages[0], products[0], references[0]))
+            for package, product, reference in zip_longest(packages[1:], products[1:], references[1:], fillvalue=""):
+                print("%71s %-20s %-40s %-20s" % (" ", package, product, reference))
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        sys.exit(1)

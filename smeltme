@@ -11,6 +11,8 @@ import sys
 from datetime import datetime
 from itertools import zip_longest
 from urllib.request import urlopen
+from urllib.error import HTTPError, URLError
+
 
 __version__ = "0.2.0"
 
@@ -22,10 +24,6 @@ def main():
     """
     Main function
     """
-    ctx = ssl.create_default_context()
-    if opts.insecure:
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
     fmt = "%-30s %-10s %-11s %-4s %-4s %-7s %-20s %-40s %-20s"
     print(fmt % (
         "ID", "SIZE", "CREATED", "DUE", "PRIO", "GROUP", "PACKAGES", "PRODUCTS", "REFERENCES"))
@@ -76,8 +74,21 @@ def parse_opts():
 
 if __name__ == "__main__":
     opts = parse_opts()
+    if opts.version:
+        print(__version__)
+        sys.exit(0)
     if not opts.groups:
         opts.groups = GROUPS
+    ctx = ssl.create_default_context()
+    if opts.insecure:
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+    # Check if host is accessible
+    try:
+        urlopen("https://smelt.suse.de/static/img/favicon.ico", context=ctx)
+    except (HTTPError, URLError) as err:
+        print("ERROR: %s" % err.reason, file=sys.stderr)
+        sys.exit(1)
     try:
         main()
     except KeyboardInterrupt:

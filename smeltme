@@ -36,16 +36,17 @@ def main():
             data = json.loads(conn.read())
         results += data['results']
     for item in results:
-        assigned = None
-        if opts.group and \
-                item['unfinished_reviews'][0]['assigned_by_group'] is not None and \
-                item['unfinished_reviews'][0]['assigned_by_group']['name'] in opts.group:
-            assigned = item['unfinished_reviews'][0]['assigned_by_group']['name']
-        if opts.user and \
-                item['unfinished_reviews'][0]['assigned_by_user'] is not None and \
-                item['unfinished_reviews'][0]['assigned_by_user']['username'] in opts.user:
-            assigned = item['unfinished_reviews'][0]['assigned_by_user']['username']
-        if assigned is None:
+        groups = {
+            _['assigned_by_group']['name'] for _ in item['unfinished_reviews']
+            if _['assigned_by_group'] is not None}
+        users = {
+            _['assigned_by_user']['username'] for _ in item['unfinished_reviews']
+            if _['assigned_by_user'] is not None}
+        if opts.user & users:
+            assigned = users.pop()
+        elif opts.group & groups:
+            assigned = groups.pop()
+        else:
             continue
         id_rr = "%s:%s" % (item['incident']['project'], item['request_id'])
         # rating = item['incident']['rating']['name']
@@ -93,6 +94,8 @@ if __name__ == "__main__":
         sys.exit(0)
     if not opts.user and not opts.group:
         opts.group = GROUPS
+    opts.user = set(opts.user) if opts.user else set()
+    opts.group = set(opts.group) if opts.group else set()
     ctx = ssl.create_default_context()
     if opts.insecure:
         ctx.check_hostname = False

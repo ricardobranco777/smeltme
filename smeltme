@@ -92,10 +92,11 @@ if __name__ == "__main__":
     if opts.version:
         print(__version__)
         sys.exit(0)
-    if not opts.group:
+    if opts.user and opts.group:
+        print("ERROR: The -g (--group) & -u (--user) options are mutually exclusive.", file=sys.stderr)
+        sys.exit(1)
+    if not opts.user and not opts.group:
         opts.group = GROUPS
-    if opts.user:
-        opts.group = None
     ctx = ssl.create_default_context()
     if opts.insecure:
         ctx.check_hostname = False

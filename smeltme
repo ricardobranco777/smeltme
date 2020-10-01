@@ -36,13 +36,16 @@ def main():
             data = json.loads(conn.read())
         results += data['results']
     for item in results:
-        if opts.group and (
-                item['unfinished_reviews'][0]['assigned_by_group'] is None or \
-                item['unfinished_reviews'][0]['assigned_by_group']['name'] not in opts.group):
-            continue
-        if opts.user and (
-                item['unfinished_reviews'][0]['assigned_by_user'] is None or \
-                item['unfinished_reviews'][0]['assigned_by_user']['username'] not in opts.user):
+        assigned = None
+        if opts.group and \
+                item['unfinished_reviews'][0]['assigned_by_group'] is not None and \
+                item['unfinished_reviews'][0]['assigned_by_group']['name'] in opts.group:
+            assigned = item['unfinished_reviews'][0]['assigned_by_group']['name']
+        if opts.user and \
+                item['unfinished_reviews'][0]['assigned_by_user'] is not None and \
+                item['unfinished_reviews'][0]['assigned_by_user']['username'] in opts.user:
+            assigned = item['unfinished_reviews'][0]['assigned_by_user']['username']
+        if assigned is None:
             continue
         id_rr = "%s:%s" % (item['incident']['project'], item['request_id'])
         # rating = item['incident']['rating']['name']
@@ -51,10 +54,6 @@ def main():
         enddate = datetime.strptime(item['incident']['deadline'], "%Y-%m-%dT%H:%M:%SZ") - datetime.now()
         due = "%dd" % enddate.days
         priority = item['incident']['priority']
-        if opts.group:
-            assigned = item['unfinished_reviews'][0]['assigned_by_group']['name']
-        else:
-            assigned = item['unfinished_reviews'][0]['assigned_by_user']['username']
         packages = item['packages']
         products = item['channellist']
         references = [_['url'] for _ in item['references']]
@@ -92,9 +91,6 @@ if __name__ == "__main__":
     if opts.version:
         print(__version__)
         sys.exit(0)
-    if opts.user and opts.group:
-        print("ERROR: The -g (--group) & -u (--user) options are mutually exclusive.", file=sys.stderr)
-        sys.exit(1)
     if not opts.user and not opts.group:
         opts.group = GROUPS
     ctx = ssl.create_default_context()

@@ -18,5 +18,3 @@ Parse https://smelt.suse.de/overview/ for specified groups
                         Filter by user. May be specified multiple times
   -V, --version         Show version and exit
 ```
-
-Note: The `-u` (`--user`) and `-g` (`--group`) options are mutually exclusive.

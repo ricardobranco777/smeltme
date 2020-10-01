@@ -14,7 +14,7 @@ from urllib.request import urlopen
 from urllib.error import HTTPError, URLError
 
 
-__version__ = "0.6.0"
+__version__ = "0.7.0"
 
 GROUPS = ['qam-ha', 'qam-sap']
 URL = "https://smelt.suse.de/api/v1/overview/testing/"

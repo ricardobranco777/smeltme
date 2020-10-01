@@ -43,9 +43,9 @@ def main():
             _['assigned_by_user']['username'] for _ in item['unfinished_reviews']
             if _['assigned_by_user'] is not None}
         if opts.user & users:
-            assigned = set.pop(opts.user & users)
+            assigned = ",".join(opts.user & users)
         elif opts.group & groups:
-            assigned = set.pop(opts.group & groups)
+            assigned = ",".join(opts.group & groups)
         else:
             continue
         id_rr = "%s:%s" % (item['incident']['project'], item['request_id'])

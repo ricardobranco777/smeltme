@@ -24,7 +24,7 @@ def get_users(item):
     """
     Filter users from item['unfinished_reviews'] and return a set
     """
-    return {
+    return opts.user & {
         _['assigned_by_user']['username'] for _ in item['unfinished_reviews']
         if _['assigned_by_user'] is not None}
 
@@ -33,7 +33,7 @@ def get_groups(item):
     """
     Filter groups from item['unfinished_reviews'] and return a set
     """
-    return {
+    return opts.group & {
         _['assigned_by_group']['name'] for _ in item['unfinished_reviews']
         if _['assigned_by_group'] is not None}
 
@@ -50,7 +50,7 @@ def get_info():
             data = json.loads(conn.read())
         results += data['results']
     for item in results:
-        if opts.user & get_users(item) or opts.group & get_groups(item):
+        if get_users(item) or get_groups(item):
             info.append(item)
 
 
@@ -63,11 +63,9 @@ def print_info():
         print(fmt % (
             "ID", "SIZE", "CREATED", "DUE", "PRIO", "ASSIGNED", "PACKAGES", "CHANNELS", "REFERENCES"))
     for item in info:
-        users = get_users(item)
-        if opts.user & users:
-            assigned = ",".join(opts.user & users)
-        else:
-            assigned = ",".join(opts.group & get_groups(item))
+        assigned = ",".join(get_users(item))
+        if not assigned:
+            assigned = ",".join(get_groups(item))
         id_rr = "%s:%s" % (item['incident']['project'], item['request_id'])
         size = "%s %s" % (item['incident']['testsize'], item['incident']['testcomplexity'])
         enddate = datetime.strptime(item['incident']['deadline'], "%Y-%m-%dT%H:%M:%SZ") - datetime.now()

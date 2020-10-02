@@ -60,25 +60,23 @@ def print_info():
     """
     fmt = "%-30s %-10s %-11s %-4s %-4s %-10s %-20s %-40s %-20s"
     if not opts.no_header:
-        print(fmt % (
-            "ID", "SIZE", "CREATED", "DUE", "PRIO", "ASSIGNED", "PACKAGES", "CHANNELS", "REFERENCES"))
-    now = datetime.utcnow()
+        print(fmt % ("ID", "SIZE", "CREATED", "DUE", "PRIO", "ASSIGNED", "PACKAGES", "CHANNELS", "REFERENCES"))
     for item in info:
         assigned = ",".join(get_users(item))
         if not assigned:
             assigned = ",".join(get_groups(item))
         id_rr = "%s:%s" % (item['incident']['project'], item['request_id'])
         size = "%s %s" % (item['incident']['testsize'], item['incident']['testcomplexity'])
-        enddate = datetime.strptime(item['incident']['deadline'], "%Y-%m-%dT%H:%M:%SZ") - now
+        created = item['created'][:len("YYYY-MM-DD")]
+        enddate = datetime.fromisoformat(item['incident']['deadline'][:-1]) - datetime.utcnow()
         due = "%dd" % enddate.days
         priority = item['incident']['priority']
-        item['packages'].sort()
-        item['channellist'].sort()
-        references = sorted(_['url'] for _ in item['references'])
-        print(fmt % (
-            id_rr, size, item['created'][:10], due, priority, assigned, item['packages'][0], item['channellist'][0], references[0]))
-        for package, channel, reference in zip_longest(item['packages'][1:], item['channellist'][1:], references[1:], fillvalue=""):
-            print("%74s %-20s %-40s %-20s" % (" ", package, channel, reference))
+        packages = sorted(item['packages'])
+        channels = sorted(item['channellist'])
+        urls = sorted(_['url'] for _ in item['references'])
+        print(fmt % (id_rr, size, created, due, priority, assigned, packages[0], channels[0], urls[0]))
+        for package, channel, url in zip_longest(packages[1:], channels[1:], urls[1:], fillvalue=""):
+            print("%74s %-20s %-40s %-20s" % (" ", package, channel, url))
 
 
 def parse_opts():

@@ -10,6 +10,7 @@ Parse https://smelt.suse.de/overview/ for specified groups
 
 ```
   -h, --help            show this help message and exit
+  -a, --all             Show all. Ignore -g & -u options
   -g GROUP, --group GROUP
                         Filter by group. May be specified multiple times
   -H, --no-header       Do not show header

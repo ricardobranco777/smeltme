@@ -73,8 +73,7 @@ def print_info(info):
         print(fmt % ("ID", "SIZE", "CREATED", "DUE", "PRIO", "ASSIGNED", "PACKAGES", "VERSIONS", "REFERENCES"))
     for item in info:
         assigned = list(get_users(item))
-        if not assigned:
-            assigned = list(get_groups(item))
+        assigned.extend(get_groups(item))
         id_rr = "%s:%s" % (item['incident']['project'], item['request_id'])
         size = "%s %s" % (item['incident']['testsize'], item['incident']['testcomplexity'])
         created = item['created'][:len("YYYY-MM-DD")]

@@ -56,14 +56,15 @@ def get_info():
             data = json.loads(conn.read())
         results += data['results']
     if opts.all:
-        info.extend(results)
-        return
+        return results
+    info = []
     for item in results:
         if get_users(item) or get_groups(item):
             info.append(item)
+    return info
 
 
-def print_info():
+def print_info(info):
     """
     Print information
     """
@@ -84,7 +85,7 @@ def print_info():
         versions = sorted(_.split(':')[1] for _ in item['codestreams'])
         urls = sorted(_['url'] for _ in item['references'] if "suse.com" in _['url'])
         if not urls:
-            urls = ("")
+            urls = [""]
         print(fmt % (id_rr, size, created, due, priority, assigned[0], packages[0], versions[0], urls[0]))
         for assignee, package, version, url in zip_longest(assigned[1:], packages[1:], versions[1:], urls[1:], fillvalue=""):
             print("%63s %-25s %-30s %-12s %-20s" % (" ", assignee, package, version, url))
@@ -119,6 +120,17 @@ def parse_opts():
     return parser.parse_args()
 
 
+def main():
+    """
+    Main function
+    """
+    info = get_info()
+    if opts.json:
+        print(json.dumps(info))
+    else:
+        print_info(info)
+
+
 if __name__ == "__main__":
     opts = parse_opts()
     if opts.version:
@@ -141,11 +153,6 @@ if __name__ == "__main__":
         print("ERROR: %s" % err.reason, file=sys.stderr)
         sys.exit(1)
     try:
-        info = []
-        get_info()
-        if opts.json:
-            print(json.dumps(info))
-        else:
-            print_info()
+        main()
     except KeyboardInterrupt:
         sys.exit(1)

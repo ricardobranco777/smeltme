@@ -58,9 +58,9 @@ def print_info():
     """
     Print information
     """
-    fmt = "%-30s %-10s %-11s %-4s %-4s %-10s %-20s %-40s %-20s"
+    fmt = "%-30s %-10s %-11s %-4s %-4s %-10s %-20s %-12s %-20s"
     if not opts.no_header:
-        print(fmt % ("ID", "SIZE", "CREATED", "DUE", "PRIO", "ASSIGNED", "PACKAGES", "CHANNELS", "REFERENCES"))
+        print(fmt % ("ID", "SIZE", "CREATED", "DUE", "PRIO", "ASSIGNED", "PACKAGES", "VERSIONS", "REFERENCES"))
     for item in info:
         assigned = ",".join(get_users(item))
         if not assigned:
@@ -72,11 +72,11 @@ def print_info():
         due = "%dd" % enddate.days
         priority = item['incident']['priority']
         packages = sorted(item['packages'])
-        channels = sorted(item['channellist'])
+        versions = sorted(_.split(':')[1] for _ in item['codestreams'])
         urls = sorted(_['url'] for _ in item['references'])
-        print(fmt % (id_rr, size, created, due, priority, assigned, packages[0], channels[0], urls[0]))
-        for package, channel, url in zip_longest(packages[1:], channels[1:], urls[1:], fillvalue=""):
-            print("%74s %-20s %-40s %-20s" % (" ", package, channel, url))
+        print(fmt % (id_rr, size, created, due, priority, assigned, packages[0], versions[0], urls[0]))
+        for package, version, url in zip_longest(packages[1:], versions[1:], urls[1:], fillvalue=""):
+            print("%74s %-20s %-12s %-20s" % (" ", package, version, url))
 
 
 def parse_opts():

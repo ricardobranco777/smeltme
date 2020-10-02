@@ -62,13 +62,14 @@ def print_info():
     if not opts.no_header:
         print(fmt % (
             "ID", "SIZE", "CREATED", "DUE", "PRIO", "ASSIGNED", "PACKAGES", "CHANNELS", "REFERENCES"))
+    now = datetime.utcnow()
     for item in info:
         assigned = ",".join(get_users(item))
         if not assigned:
             assigned = ",".join(get_groups(item))
         id_rr = "%s:%s" % (item['incident']['project'], item['request_id'])
         size = "%s %s" % (item['incident']['testsize'], item['incident']['testcomplexity'])
-        enddate = datetime.strptime(item['incident']['deadline'], "%Y-%m-%dT%H:%M:%SZ") - datetime.now()
+        enddate = datetime.strptime(item['incident']['deadline'], "%Y-%m-%dT%H:%M:%SZ") - now
         due = "%dd" % enddate.days
         priority = item['incident']['priority']
         item['packages'].sort()

@@ -20,14 +20,28 @@ GROUPS = ['qam-ha', 'qam-sap']
 URL = "https://smelt.suse.de/api/v1/overview/testing/"
 
 
-def main():
+def get_users(item):
     """
-    Main function
+    Filter users from item['unfinished_reviews'] and return a set
     """
-    fmt = "%-30s %-10s %-11s %-4s %-4s %-10s %-20s %-40s %-20s"
-    if not opts.no_header:
-        print(fmt % (
-            "ID", "SIZE", "CREATED", "DUE", "PRIO", "ASSIGNED", "PACKAGES", "PRODUCTS", "REFERENCES"))
+    return {
+        _['assigned_by_user']['username'] for _ in item['unfinished_reviews']
+        if _['assigned_by_user'] is not None}
+
+
+def get_groups(item):
+    """
+    Filter groups from item['unfinished_reviews'] and return a set
+    """
+    return {
+        _['assigned_by_group']['name'] for _ in item['unfinished_reviews']
+        if _['assigned_by_group'] is not None}
+
+
+def get_info():
+    """
+    Get information
+    """
     with urlopen(URL, context=ctx) as conn:
         data = json.loads(conn.read())
     results = data['results']
@@ -36,32 +50,36 @@ def main():
             data = json.loads(conn.read())
         results += data['results']
     for item in results:
-        groups = {
-            _['assigned_by_group']['name'] for _ in item['unfinished_reviews']
-            if _['assigned_by_group'] is not None}
-        users = {
-            _['assigned_by_user']['username'] for _ in item['unfinished_reviews']
-            if _['assigned_by_user'] is not None}
+        if opts.user & get_users(item) or opts.group & get_groups(item):
+            info.append(item)
+
+
+def print_info():
+    """
+    Print information
+    """
+    fmt = "%-30s %-10s %-11s %-4s %-4s %-10s %-20s %-40s %-20s"
+    if not opts.no_header:
+        print(fmt % (
+            "ID", "SIZE", "CREATED", "DUE", "PRIO", "ASSIGNED", "PACKAGES", "CHANNELS", "REFERENCES"))
+    for item in info:
+        users = get_users(item)
         if opts.user & users:
             assigned = ",".join(opts.user & users)
-        elif opts.group & groups:
-            assigned = ",".join(opts.group & groups)
         else:
-            continue
+            assigned = ",".join(opts.group & get_groups(item))
         id_rr = "%s:%s" % (item['incident']['project'], item['request_id'])
-        # rating = item['incident']['rating']['name']
         size = "%s %s" % (item['incident']['testsize'], item['incident']['testcomplexity'])
-        created = item['created'][:10]
         enddate = datetime.strptime(item['incident']['deadline'], "%Y-%m-%dT%H:%M:%SZ") - datetime.now()
         due = "%dd" % enddate.days
         priority = item['incident']['priority']
-        packages = sorted(item['packages'])
-        products = sorted(item['channellist'])
+        item['packages'].sort()
+        item['channellist'].sort()
         references = sorted(_['url'] for _ in item['references'])
         print(fmt % (
-            id_rr, size, created, due, priority, assigned, packages[0], products[0], references[0]))
-        for package, product, reference in zip_longest(packages[1:], products[1:], references[1:], fillvalue=""):
-            print("%74s %-20s %-40s %-20s" % (" ", package, product, reference))
+            id_rr, size, item['created'][:10], due, priority, assigned, item['packages'][0], item['channellist'][0], references[0]))
+        for package, channel, reference in zip_longest(item['packages'][1:], item['channellist'][1:], references[1:], fillvalue=""):
+            print("%74s %-20s %-40s %-20s" % (" ", package, channel, reference))
 
 
 def parse_opts():
@@ -75,6 +93,9 @@ def parse_opts():
     parser.add_argument(
         '-H', '--no-header', action='store_true',
         help="Do not show header")
+    parser.add_argument(
+        '-j', '--json', action='store_true',
+        help="JSON output")
     parser.add_argument(
         '-k', '--insecure', action='store_true',
         help="Allow insecure server connections when using SSL")
@@ -107,6 +128,11 @@ if __name__ == "__main__":
         print("ERROR: %s" % err.reason, file=sys.stderr)
         sys.exit(1)
     try:
-        main()
+        info = []
+        get_info()
+        if opts.json:
+            print(json.dumps(info))
+        else:
+            print_info()
     except KeyboardInterrupt:
         sys.exit(1)

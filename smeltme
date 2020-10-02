@@ -57,11 +57,7 @@ def get_info():
         results += data['results']
     if opts.all:
         return results
-    info = []
-    for item in results:
-        if get_users(item) or get_groups(item):
-            info.append(item)
-    return info
+    return [item for item in results if get_users(item) or get_groups(item)]
 
 
 def print_info(info):

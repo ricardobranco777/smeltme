@@ -73,8 +73,7 @@ def print_info(info):
         created = item['created'][:len("YYYY-MM-DD")]
         enddate = datetime.fromisoformat(item['incident']['deadline'][:-1]) - datetime.utcnow()
         due = "%dd" % enddate.days
-        assigned = list(get_users(item))
-        assigned.extend(get_groups(item))
+        assigned = list(get_users(item) | get_groups(item))
         item['packages'].sort()
         versions = sorted(_.split(':')[1] for _ in item['codestreams'])
         urls = sorted(_['url'] for _ in item['references'] if "suse.com" in _['url'])

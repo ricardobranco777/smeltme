@@ -75,7 +75,7 @@ def print_info(info):
         due = "%dd" % enddate.days
         assigned = list(get_users(item) | get_groups(item))
         item['packages'].sort()
-        versions = sorted(_.split(':')[1] for _ in item['codestreams'])
+        versions = sorted(_.split(':')[1] for _ in item['codestreams'] if _.startswith("SUSE:SLE-"))
         urls = sorted(_['url'] for _ in item['references'] if "suse.com" in _['url'])
         if not urls:
             urls = [""]

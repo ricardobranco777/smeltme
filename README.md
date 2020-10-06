@@ -11,6 +11,7 @@ Parse https://smelt.suse.de/overview/ for specified groups
 ```
   -h, --help            show this help message and exit
   -a, --all             Show all. Ignore -g & -u options
+  -c, --csv             CSV output
   -g GROUP, --group GROUP
                         Filter by group. May be specified multiple times
   -H, --no-header       Do not show header
@@ -18,5 +19,6 @@ Parse https://smelt.suse.de/overview/ for specified groups
   -k, --insecure        Allow insecure server connections when using SSL
   -u USER, --user USER
                         Filter by user. May be specified multiple times
+  -v, --verbose         Verbose. Show URL's for references
   -V, --version         Show version and exit
 ```

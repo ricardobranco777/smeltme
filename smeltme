@@ -64,7 +64,7 @@ def print_info(info):
     """
     Print information
     """
-    fmt = "%-30s %-10s %-11s %5s  %5s  %-25s %-12s %-30s %-20s"
+    fmt = "%-30s %-10s %-11s %5s  %5s  %-25s %-12s %-30s %s"
     if not opts.no_header:
         print(fmt % ("ID", "SIZE", "CREATED", "DUE", "PRIO", "ASSIGNED", "VERSIONS", "PACKAGES", "REFERENCES"))
     for item in info:
@@ -81,7 +81,7 @@ def print_info(info):
             urls = [""]
         print(fmt % (id_rr, size, created, due, item['incident']['priority'], assigned[0], versions[0], item['packages'][0], urls[0]))
         for assignee, version, package, url in zip_longest(assigned[1:], versions[1:], item['packages'][1:], urls[1:], fillvalue=" "):
-            print("%67s %-25s %-12s %-30s %-20s" % (" ", assignee, version, package, url))
+            print("%67s %-25s %-12s %-30s %s" % (" ", assignee, version, package, url))
 
 
 def parse_opts():

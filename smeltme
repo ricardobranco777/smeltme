@@ -9,7 +9,7 @@ import ssl
 import sys
 
 from datetime import datetime
-from itertools import zip_longest
+from itertools import chain, zip_longest
 from urllib.request import urlopen
 from urllib.error import HTTPError, URLError
 
@@ -64,12 +64,14 @@ def print_info(info):
     """
     Print information
     """
-    fmt = "%-30s %-10s %-11s %5s  %5s  %-25s %-12s %-30s %s"
     keys = ("ID", "SIZE", "CREATED", "DUE", "PRIO", "ASSIGNED", "VERSIONS", "PACKAGES", "REFERENCES")
     if not opts.no_header:
         if opts.csv:
             print(",".join(keys))
         else:
+            assigned_width = max(10, max(len(_) for item in info for _ in chain(get_users(item) | get_groups(item))))
+            package_width = max(10, max(len(package) for item in info for package in item['packages']))
+            fmt = "%-30s %-10s %-11s %5s  %5s  %-{}s  %-12s %-{}s %s".format(assigned_width, package_width)
             print(fmt % keys)
     for item in info:
         id_rr = "%s:%s" % (item['incident']['project'], item['request_id'])
@@ -92,7 +94,7 @@ def print_info(info):
         else:
             print(fmt % (id_rr, size, created, due, item['incident']['priority'], assigned[0], versions[0], item['packages'][0], refs[0]))
             for assignee, version, package, ref in zip_longest(assigned[1:], versions[1:], item['packages'][1:], refs[1:], fillvalue=" "):
-                print("%67s %-25s %-12s %-30s %s" % (" ", assignee, version, package, ref))
+                print("%67s %-*s  %-12s %-*s %s" % (" ", assigned_width, assignee, version, package_width, package, ref))
 
 
 def parse_opts():

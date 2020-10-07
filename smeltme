@@ -68,7 +68,7 @@ def print_info(info):
     keys = ("ID", "SIZE", "CREATED", "DUE", "PRIO", "ASSIGNED", "VERSIONS", "PACKAGES", "REFERENCES")
     if not opts.no_header:
         if opts.csv:
-            print(":".join(keys))
+            print(",".join(keys))
         else:
             print(fmt % keys)
     for item in info:

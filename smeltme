@@ -13,9 +13,8 @@ from itertools import chain, zip_longest
 from urllib.request import urlopen
 from urllib.error import HTTPError, URLError
 
-# datetime.fromisoformat() is Python 3.7+ only
-from backports.datetime_fromisoformat import MonkeyPatch
-MonkeyPatch.patch_fromisoformat()
+import dateutil.parser
+
 
 __version__ = "1.1.3"
 
@@ -80,7 +79,8 @@ def print_info(info):
         id_rr = "%s:%s" % (item['incident']['project'], item['request_id'])
         size = "%s %s" % (item['incident']['testsize'], item['incident']['testcomplexity'])
         created = item['created'][:len("YYYY-MM-DD")]
-        enddate = datetime.fromisoformat(item['incident']['deadline'][:-1]) - datetime.utcnow()
+        # enddate = datetime.fromisoformat(item['incident']['deadline'][:-1]) - datetime.utcnow()  # Python 3.7+ only
+        enddate = dateutil.parser.isoparse(item['incident']['deadline']).replace(tzinfo=None) - datetime.utcnow()
         due = "%dd" % enddate.days
         assigned = list(get_users(item) | get_groups(item))
         item['packages'].sort()

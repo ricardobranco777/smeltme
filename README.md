@@ -7,7 +7,7 @@ Parse https://smelt.suse.de/overview/ for specified groups
 ## Requirements
 
 - Python 3
-- backports-datetime-fromisoformat (run `pip3 install --user backports-datetime-fromisoformat`)
+- python-dateutil (run `pip3 install --user python-dateutil`)
 
 ## Options
 

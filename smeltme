@@ -51,11 +51,11 @@ def get_info():
     Get information
     """
     with urlopen(URL, context=ctx) as conn:
-        data = json.loads(conn.read())
+        data = json.load(conn)
     results = data['results']
     while data['next'] is not None:
         with urlopen(data['next'], context=ctx) as conn:
-            data = json.loads(conn.read())
+            data = json.load(conn)
         results += data['results']
     if opts.all:
         return results

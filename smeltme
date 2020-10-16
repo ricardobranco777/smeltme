@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 """
 Parse https://smelt.suse.de/overview/ for specified groups or users
 """

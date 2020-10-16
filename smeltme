@@ -67,13 +67,13 @@ def print_info(info):
     Print information
     """
     keys = ("ID", "SIZE", "CREATED", "DUE", "PRIO", "ASSIGNED", "VERSIONS", "PACKAGES", "REFERENCES")
+    assigned_width = max(10, max(len(_) for item in info for _ in chain(get_users(item) | get_groups(item))))
+    package_width = max(10, max(len(package) for item in info for package in item['packages']))
+    fmt = "%-30s %-10s %-11s %5s  %5s  %-{}s  %-12s %-{}s  %s".format(assigned_width, package_width)
     if not opts.no_header:
         if opts.csv:
             print(",".join(keys))
         else:
-            assigned_width = max(10, max(len(_) for item in info for _ in chain(get_users(item) | get_groups(item))))
-            package_width = max(10, max(len(package) for item in info for package in item['packages']))
-            fmt = "%-30s %-10s %-11s %5s  %5s  %-{}s  %-12s %-{}s  %s".format(assigned_width, package_width)
             print(fmt % keys)
     for item in info:
         id_rr = "%s:%s" % (item['incident']['project'], item['request_id'])

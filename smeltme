@@ -75,6 +75,8 @@ def print_info(info):
             print(",".join(keys))
         else:
             print(fmt % keys)
+    if opts.sort:
+        info.sort(key=lambda item: item['incident']['priority'], reverse=opts.reverse)
     for item in info:
         id_rr = "%s:%s" % (item['incident']['project'], item['request_id'])
         size = "%s %s" % (item['incident']['testsize'], item['incident']['testcomplexity'])
@@ -123,6 +125,12 @@ def parse_opts():
     parser.add_argument(
         '-k', '--insecure', action='store_true',
         help="Allow insecure server connections when using SSL")
+    parser.add_argument(
+        '-s', '--sort', action='store_true',
+        help="Sort items by priority")
+    parser.add_argument(
+        '-r', '--reverse', action='store_false',
+        help="reverse sort")
     parser.add_argument(
         '-u', '--user', action='append',
         help="Filter by user. May be specified multiple times")

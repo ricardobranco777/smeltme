@@ -22,6 +22,8 @@ Parse https://smelt.suse.de/overview/ for specified groups
   -k, --insecure        Allow insecure server connections when using SSL
   -u USER, --user USER
                         Filter by user. May be specified multiple times
+  -s, --sort            Sort items by priority
+  -r, --reverse         reverse sort
   -v, --verbose         Verbose. Show URL's for references
   -V, --version         Show version and exit
 ```

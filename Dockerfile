@@ -16,4 +16,4 @@ RUN	adduser -D user -h /user
 WORKDIR	/user
 
 USER	user
-ENTRYPOINT ["/usr/local/bin/python3", "/smeltme"]
+ENTRYPOINT ["/smeltme"]

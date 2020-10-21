@@ -5,6 +5,7 @@ Parse https://smelt.suse.de/overview/ for specified groups or users
 
 import argparse
 import json
+import re
 import ssl
 import sys
 
@@ -86,7 +87,9 @@ def print_info(info):
         due = "%dd" % enddate.days
         assigned = list(get_users(item) | get_groups(item))
         item['packages'].sort()
-        versions = sorted(_.split(':')[1] for _ in item['codestreams'] if _.startswith("SUSE:SLE-"))
+        versions = sorted(list(set(re.findall(r"(\d{2}(?:-SP\d))", " ".join(item['channellist'])))))
+        if not versions:
+            versions = [""]
         if opts.verbose:
             refs = sorted(_['url'] for _ in item['references'])
         else:

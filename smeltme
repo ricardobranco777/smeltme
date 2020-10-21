@@ -85,7 +85,7 @@ def print_info(info):
         # enddate = datetime.fromisoformat(item['incident']['deadline'][:-1]) - datetime.utcnow()  # Python 3.7+ only
         enddate = dateutil.parser.isoparse(item['incident']['deadline']).replace(tzinfo=None) - datetime.utcnow()
         due = "%dd" % enddate.days
-        assigned = list(get_users(item) | get_groups(item))
+        assigned = sorted(list(get_users(item) | get_groups(item)))
         item['packages'].sort()
         versions = sorted(list(set(re.findall(r"(\d{2}(?:-SP\d))", " ".join(item['channellist'])))))
         if not versions:

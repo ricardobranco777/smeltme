@@ -27,3 +27,11 @@ Parse https://smelt.suse.de/overview/ for specified groups
   -v, --verbose         Verbose. Show URL's for references
   -V, --version         Show version and exit
 ```
+
+## Example
+
+Open a tab for each Bugzilla entry:
+
+```
+for i in $(smeltme -u rbranco -v -csv -H | grep $package | awk -F, '{ print $8 }' | sed  's/|/ /g') ; do xdg-open $i ; done
+```

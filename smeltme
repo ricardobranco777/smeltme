@@ -154,7 +154,8 @@ def main():
     if opts.json:
         print(json.dumps(info))
     else:
-        print_info(info)
+        if info:
+            print_info(info)
 
 
 if __name__ == "__main__":

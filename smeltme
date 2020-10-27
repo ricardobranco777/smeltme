@@ -5,7 +5,6 @@ Parse https://smelt.suse.de/overview/ for specified groups or users
 
 import argparse
 import json
-import re
 import ssl
 import sys
 
@@ -67,10 +66,11 @@ def print_info(info):
     """
     Print information
     """
-    keys = ("ID", "SIZE", "CREATED", "DUE", "PRIO", "ASSIGNED", "VERSIONS", "PACKAGES", "REFERENCES")
-    assigned_width = max(10, max(len(_) for item in info for _ in chain(get_users(item) | get_groups(item))))
-    package_width = max(10, max(len(package) for item in info for package in item['packages']))
-    fmt = "%-30s %-10s %-11s %5s  %5s  %-{}s  %-12s %-{}s  %s".format(assigned_width, package_width)
+    keys = ("ID", "SIZE", "CREATED", "DUE", "PRIO", "ASSIGNED", "CHANNELS", "PACKAGES", "REFERENCES")
+    assigned_width = max(8, max(len(assigned) for item in info for assigned in chain(get_users(item) | get_groups(item))))
+    channel_width = max(8, max(len(version) for item in info for version in item['channellist']))
+    package_width = max(8, max(len(package) for item in info for package in item['packages']))
+    fmt = "%-30s %-10s %-11s %5s  %5s  %-{}s  %-{}s  %-{}s  %s".format(assigned_width, channel_width, package_width)
     if not opts.no_header:
         if opts.csv:
             print(",".join(keys))
@@ -86,10 +86,8 @@ def print_info(info):
         enddate = dateutil.parser.isoparse(item['incident']['deadline']).replace(tzinfo=None) - datetime.utcnow()
         due = "%dd" % enddate.days
         assigned = sorted(list(get_users(item) | get_groups(item)))
+        item['channellist'].sort()
         item['packages'].sort()
-        versions = sorted(list(set(re.findall(r"(1[125](?:-SP\d)?)", " ".join(item['channellist'])))))
-        if not versions:
-            versions = ["-"]
         if opts.verbose:
             refs = sorted(_['url'] for _ in item['references'])
         else:
@@ -98,11 +96,11 @@ def print_info(info):
         if not refs:
             refs = [""]
         if opts.csv:
-            print(",".join((id_rr, size, created, due, str(item['incident']['priority']), "|".join(assigned), "|".join(versions), "|".join(item['packages']), "|".join(refs))))
+            print(",".join((id_rr, size, created, due, str(item['incident']['priority']), "|".join(assigned), "|".join(item['channellist']), "|".join(item['packages']), "|".join(refs))))
         else:
-            print(fmt % (id_rr, size, created, due, item['incident']['priority'], assigned[0], versions[0], item['packages'][0], refs[0]))
-            for assignee, version, package, ref in zip_longest(assigned[1:], versions[1:], item['packages'][1:], refs[1:], fillvalue=" "):
-                print("%67s %-*s  %-12s %-*s  %s" % (" ", assigned_width, assignee, version, package_width, package, ref))
+            print(fmt % (id_rr, size, created, due, item['incident']['priority'], assigned[0], item['channellist'][0], item['packages'][0], refs[0]))
+            for assignee, channel, package, ref in zip_longest(assigned[1:], item['channellist'][1:], item['packages'][1:], refs[1:], fillvalue=" "):
+                print("%67s %-*s  %-*s  %-*s  %s" % (" ", assigned_width, assignee, channel_width, channel, package_width, package, ref))
 
 
 def parse_opts():

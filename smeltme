@@ -98,7 +98,7 @@ def print_info(info):
         if not refs:
             refs = [""]
         if opts.csv:
-            print(",".join((id_rr, size, created, due, str(item['incident']['priority']), "|".join(assigned), "|".join(item['packages']), "|".join(refs))))
+            print(",".join((id_rr, size, created, due, str(item['incident']['priority']), "|".join(assigned), "|".join(versions), "|".join(item['packages']), "|".join(refs))))
         else:
             print(fmt % (id_rr, size, created, due, item['incident']['priority'], assigned[0], versions[0], item['packages'][0], refs[0]))
             for assignee, version, package, ref in zip_longest(assigned[1:], versions[1:], item['packages'][1:], refs[1:], fillvalue=" "):

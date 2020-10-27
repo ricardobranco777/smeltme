@@ -33,5 +33,5 @@ Parse https://smelt.suse.de/overview/ for specified groups
 Open a tab for each Bugzilla entry:
 
 ```
-for i in $(smeltme -u rbranco -v -csv -H | grep $package | awk -F, '{ print $9 }' | sed 's/|/ /g') ; do xdg-open $i ; done
+for i in $(smeltme -u rbranco -v --csv -H | grep $package | awk -F, '{ print $9 }' | sed 's/|/ /g') ; do xdg-open $i ; done
 ```

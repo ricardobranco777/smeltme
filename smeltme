@@ -87,9 +87,9 @@ def print_info(info):
         due = "%dd" % enddate.days
         assigned = sorted(list(get_users(item) | get_groups(item)))
         item['packages'].sort()
-        versions = sorted(list(set(re.findall(r"(\d{2}(?:-SP\d))", " ".join(item['channellist'])))))
+        versions = sorted(list(set(re.findall(r"(1[125](?:-SP\d)?)", " ".join(item['channellist'])))))
         if not versions:
-            versions = [""]
+            versions = ["-"]
         if opts.verbose:
             refs = sorted(_['url'] for _ in item['references'])
         else:

@@ -171,8 +171,7 @@ if __name__ == "__main__":
     try:
         urlopen("https://smelt.suse.de/static/img/favicon.ico", context=ctx)
     except (HTTPError, URLError) as err:
-        print("ERROR: %s" % err.reason, file=sys.stderr)
-        sys.exit(1)
+        sys.exit("ERROR: %s" % err.reason)
     try:
         main()
     except KeyboardInterrupt:

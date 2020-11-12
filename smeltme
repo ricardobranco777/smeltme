@@ -66,7 +66,7 @@ def print_info(info):
     assigned_width = max(8, max(len(assigned) for item in info for assigned in chain(get_users(item) | get_groups(item))))
     package_width = max(8, max(len(package) for item in info for package in item['packages']))
     channel_width = max(8, max(len(version) for item in info for version in item['channellist']))
-    fmt = "%-30s %-10s %-11s %5s  %5s  %-{}s  %-{}s  %-{}s  %s".format(assigned_width, package_width, channel_width)
+    fmt = "%-16s  %-10s %-11s %5s  %5s  %-{}s  %-{}s  %-{}s  %s".format(assigned_width, package_width, channel_width)
     if not opts.no_header:
         if opts.csv:
             print(",".join(keys))
@@ -75,7 +75,7 @@ def print_info(info):
     if opts.sort:
         info.sort(key=lambda item: item['incident']['priority'], reverse=opts.reverse)
     for item in info:
-        id_rr = "%s:%s" % (item['incident']['project'], item['request_id'])
+        id_rr = "%s:%s" % (item['incident']['project'].replace("SUSE:Maintenance", "S:M"), item['request_id'])
         size = "%s %s" % (item['incident']['testsize'], item['incident']['testcomplexity'])
         created = item['created'][:len("YYYY-MM-DD")]
         # enddate = datetime.fromisoformat(item['incident']['deadline'][:-1]) - datetime.utcnow()  # Python 3.7+ only
@@ -96,7 +96,7 @@ def print_info(info):
         else:
             print(fmt % (id_rr, size, created, due, item['incident']['priority'], assigned[0], item['packages'][0], item['channellist'][0], refs[0]))
             for assignee, package, channel, ref in zip_longest(assigned[1:], item['packages'][1:], item['channellist'][1:], refs[1:], fillvalue=" "):
-                print("%67s %-*s  %-*s  %-*s  %s" % (" ", assigned_width, assignee, package_width, package, channel_width, channel, ref))
+                print("%53s  %-*s  %-*s  %-*s  %s" % (" ", assigned_width, assignee, package_width, package, channel_width, channel, ref))
 
 
 def parse_opts():

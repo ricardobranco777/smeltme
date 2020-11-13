@@ -16,7 +16,7 @@ from urllib.error import HTTPError, URLError
 import dateutil.parser
 
 
-__version__ = "1.4.1"
+__version__ = "1.4.2"
 
 GROUPS = ['qam-ha', 'qam-sap']
 URL = "https://smelt.suse.de/api/v1/overview/testing/"

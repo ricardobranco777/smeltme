@@ -89,8 +89,8 @@ def print_info(info):
         else:
             # NOTE: Some entries have only "https:" in their name
             refs = sorted(_['name'] for _ in item['references'] if _['name'] != "https:")
-        if not refs:
-            refs = [""]
+        refs = refs or [""]
+        item['packages'] = item['packages'] or ["-"]
         if opts.csv:
             print(",".join((id_rr, size, created, due, str(item['incident']['priority']), "|".join(assigned), "|".join(item['packages']), "|".join(item['channellist']), "|".join(refs))))
         else:

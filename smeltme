@@ -87,10 +87,10 @@ def print_info(info):
         item['channellist'] = item['channellist'] or ["-"]
         item['channellist'].sort()
         if opts.verbose:
-            refs = sorted(_['url'] for _ in item['references'])
+            refs = sorted(_['url'] for _ in item['incident']['references'])
         else:
             # NOTE: Some entries have only "https:" in their name
-            refs = sorted(_['name'] for _ in item['references'] if _['name'] != "https:")
+            refs = sorted(_['name'] for _ in item['incident']['references'] if _['name'] != "https:")
         refs = refs or [""]
         if opts.csv:
             print(",".join((id_rr, size, created, due, str(item['incident']['priority']), "|".join(assigned), "|".join(item['packages']), "|".join(item['channellist']), "|".join(refs))))

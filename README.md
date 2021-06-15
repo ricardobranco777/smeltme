@@ -2,7 +2,7 @@
 
 Parse https://smelt.suse.de/overview/ for specified groups
 
-[![Build Status](https://travis-ci.org/ricardobranco777/smeltme.svg?branch=master)](https://travis-ci.org/ricardobranco777/smeltme)
+[![Build Status](https://travis-ci.com/ricardobranco777/smeltme.svg?branch=master)](https://travis-ci.org/ricardobranco777/smeltme)
 
 ## Requirements
 

@@ -6,7 +6,7 @@ Parse https://smelt.suse.de/overview/ for specified groups
 
 ## Requirements
 
-- Python 3
+- Python 3.6+
 - python-dateutil (run `pip3 install --user python-dateutil` or install the `python3-python-dateutil` package in openSUSE or `python3-dateutil` in Debian/Ubuntu)
 
 ## Options

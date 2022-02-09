@@ -79,8 +79,12 @@ def print_info(info):
         rating = item['incident']['rating']['name']
         created = item['created'][:len("YYYY-MM-DD")]
         # enddate = datetime.fromisoformat(item['incident']['deadline'][:-1]) - datetime.utcnow()  # Python 3.7+ only
-        enddate = dateutil.parser.isoparse(item['incident']['deadline']).replace(tzinfo=None) - datetime.utcnow()
-        due = f"{enddate.days}d"
+        enddate = dateutil.parser.isoparse(item['incident']['deadline'])
+        if enddate is not None:
+            enddate = enddate.replace(tzinfo=None) - datetime.utcnow()
+            due = f"{enddate.days}d"
+        else:
+            due = "-"
         assigned = sorted(list(get_users(item) | get_groups(item)))
         item['packages'] = item['packages'] or ["-"]
         item['packages'].sort()

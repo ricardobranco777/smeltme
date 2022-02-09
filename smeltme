@@ -84,8 +84,9 @@ def print_info(info):
         assigned = sorted(list(get_users(item) | get_groups(item)))
         item['packages'] = item['packages'] or ["-"]
         item['packages'].sort()
-        item['channellist'] = item['channellist'] or ["-"]
-        item['channellist'].sort()
+        xkey = 'channellist' if item['channellist'] else 'codestreams'
+        item[xkey] = item[xkey] or ["-"]
+        item[xkey].sort()
         if opts.verbose:
             refs = sorted(_['url'] for _ in item['incident']['references'])
         else:
@@ -93,10 +94,10 @@ def print_info(info):
             refs = sorted(_['name'] for _ in item['incident']['references'] if _['name'] != "https:")
         refs = refs or [""]
         if opts.csv:
-            print(",".join((id_rr, rating, created, due, str(item['incident']['priority']), "|".join(assigned), "|".join(item['packages']), "|".join(item['channellist']), "|".join(refs))))
+            print(",".join((id_rr, rating, created, due, str(item['incident']['priority']), "|".join(assigned), "|".join(item['packages']), "|".join(item[xkey]), "|".join(refs))))
         else:
-            print(fmt.format(id_rr, rating, created, due, item['incident']['priority'], assigned[0], item['packages'][0], item['channellist'][0], refs[0]))
-            for assignee, package, channel, ref in zip_longest(assigned[1:], item['packages'][1:], item['channellist'][1:], refs[1:], fillvalue=" "):
+            print(fmt.format(id_rr, rating, created, due, item['incident']['priority'], assigned[0], item['packages'][0], item[xkey][0], refs[0]))
+            for assignee, package, channel, ref in zip_longest(assigned[1:], item['packages'][1:], item[xkey][1:], refs[1:], fillvalue=" "):
                 print(f"{' ': <53}  {assignee:{assigned_width}}  {package:{package_width}}  {channel:{channel_width}}  {ref}")
 
 

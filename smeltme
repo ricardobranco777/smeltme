@@ -65,7 +65,7 @@ def print_info(info):
     keys = ("ID", "RATING", "CREATED", "DUE", "PRIO", "ASSIGNED", "PACKAGES", "CHANNELS", "REFERENCES")
     assigned_width = max(8, max(len(assigned) for item in info for assigned in chain(get_users(item) | get_groups(item))))
     package_width = max(8, max(len(package) for item in info for package in item['packages']))
-    channel_width = max(8, max(len(version) for item in info for version in item['channellist']))
+    channel_width = max(8, max(len(version) for item in info for version in item['channellist'] + item['codestreams']))
     fmt = f"{{:<16}}  {{:<10}} {{:<11}} {{:<5}}  {{:<5}}  {{:{assigned_width}}}  {{:{package_width}}}  {{:{channel_width}}}  {{}}"
     if not opts.no_header:
         if opts.csv:

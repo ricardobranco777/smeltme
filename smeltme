@@ -174,10 +174,8 @@ if __name__ == "__main__":
     # Check if host is accessible
     try:
         with urlopen("https://smelt.suse.de/static/img/favicon.ico", context=ctx):
-            pass
+            main()
     except (HTTPError, URLError) as err:
         sys.exit(f"ERROR: {err.reason}")
-    try:
-        main()
     except KeyboardInterrupt:
         sys.exit(1)

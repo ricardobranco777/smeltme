@@ -18,7 +18,7 @@ import dateutil.parser
 
 __version__ = "1.4.3"
 
-GROUPS = ['qam-ha', 'qam-sap']
+GROUPS = ['qam-sle', 'qam-emergency']
 URL = "https://smelt.suse.de/api/v1/overview/testing/"
 
 

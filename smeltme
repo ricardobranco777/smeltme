@@ -66,7 +66,7 @@ def print_info(info):
     assigned_width = max(8, max(len(assigned) for item in info for assigned in chain(get_users(item) | get_groups(item))))
     package_width = max(8, max(len(package) for item in info for package in item['packages']))
     channel_width = max(8, max(len(version) for item in info for version in item['channellist'] + item['codestreams']))
-    fmt = f"{{:<16}}  {{:<10}} {{:<11}} {{:<5}}  {{:<5}}  {{:{assigned_width}}}  {{:{package_width}}}  {{:{channel_width}}}  {{}}"
+    fmt = f"{{:<16}}  {{:<10}} {{:<11}} {{:<6}}  {{:<5}}  {{:{assigned_width}}}  {{:{package_width}}}  {{:{channel_width}}}  {{}}"
     if not opts.no_header:
         print(",".join(keys) if opts.csv else fmt.format(*keys))
     if opts.sort:
@@ -100,7 +100,7 @@ def print_info(info):
         else:
             print(fmt.format(id_rr, rating, created, due, item['incident']['priority'], assigned[0], item['packages'][0], item[xkey][0], refs[0]))
             for assignee, package, channel, ref in zip_longest(assigned[1:], item['packages'][1:], item[xkey][1:], refs[1:], fillvalue=" "):
-                print(f"{' ': <53}  {assignee:{assigned_width}}  {package:{package_width}}  {channel:{channel_width}}  {ref}")
+                print(f"{' ': <54}  {assignee:{assigned_width}}  {package:{package_width}}  {channel:{channel_width}}  {ref}")
 
 
 def parse_opts():

@@ -1,13 +1,12 @@
+![Build Status](https://github.com/ricardobranco777/smeltme/actions/workflows/ci.yml/badge.svg)
+
 # smeltme
 
 Parse https://smelt.suse.de/overview/ for specified groups
 
-[![Build Status](https://travis-ci.com/ricardobranco777/smeltme.svg?branch=master)](https://travis-ci.org/ricardobranco777/smeltme)
-
 ## Requirements
 
-- Python 3.6+
-- python-dateutil (run `pip3 install --user python-dateutil` or install the `python3-python-dateutil` package in openSUSE or `python3-dateutil` in Debian/Ubuntu)
+- Tested on Python 3.8+
 
 ## Options
 

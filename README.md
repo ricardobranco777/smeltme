@@ -6,7 +6,7 @@ Parse https://smelt.suse.de/overview/ for specified groups
 
 ## Requirements
 
-- Tested on Python 3.8+
+- Python 3.11
 
 ## Options
 
@@ -24,7 +24,7 @@ Parse https://smelt.suse.de/overview/ for specified groups
   -s, --sort            Sort items by priority
   -r, --reverse         reverse sort
   -v, --verbose         Verbose. Show URL's for references
-  -V, --version         Show version and exit
+  --version             Show version and exit
 ```
 
 ## Example

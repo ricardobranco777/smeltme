@@ -5,98 +5,191 @@ Parse https://smelt.suse.de/overview/ for specified groups or users
 
 import argparse
 import json
-import ssl
 import sys
-
 from datetime import datetime
 from itertools import chain, zip_longest
-from urllib.request import urlopen
-from urllib.error import HTTPError, URLError
+
+import requests
+from requests.exceptions import RequestException
 
 
 __version__ = "1.4.4"
 
-GROUPS = ['qam-sle', 'qam-emergency']
+GROUPS = ["qam-sle", "qam-emergency"]
 URL = "https://smelt.suse.de/api/v1/overview/testing/"
+TIMEOUT = 15
 
 
-def get_users(item: dict) -> set:
+def get_users(item: dict, users: set[str] | None = None) -> set[str]:
     """
     Filter users from item['unfinished_reviews'] and return a set
     """
-    users = {_['assigned_by_user']['username'] for _ in item['unfinished_reviews'] if _['assigned_by_user']}
-    if opts.all:  # pylint: disable=used-before-assignment
-        return users
-    return users & opts.user
+    assigned = {
+        _["assigned_by_user"]["username"]
+        for _ in item["unfinished_reviews"]
+        if _["assigned_by_user"]
+    }
+    if users is None:
+        return assigned
+    return assigned & users
 
 
-def get_groups(item: dict) -> set:
+def get_groups(item: dict, groups: set[str] | None = None) -> set[str]:
     """
     Filter groups from item['unfinished_reviews'] and return a set
     """
-    groups = {_['assigned_by_group']['name'] for _ in item['unfinished_reviews'] if _['assigned_by_group']}
-    if opts.all:
-        return groups
-    return groups & opts.group
+    assigned = {
+        _["assigned_by_group"]["name"]
+        for _ in item["unfinished_reviews"]
+        if _["assigned_by_group"]
+    }
+    if groups is None:
+        return assigned
+    return assigned & groups
 
 
-def get_info() -> list:
+def get_info(
+    users: set[str] | None = None, groups: set[str] | None = None
+) -> list[dict]:
     """
     Get information
     """
-    with urlopen(URL, context=ctx) as conn:  # pylint: disable=used-before-assignment
-        data = json.load(conn)
-    results = data['results']
-    while data['next']:
-        with urlopen(data['next'], context=ctx) as conn:
-            data = json.load(conn)
-        results += data['results']
-    if opts.all:
+    try:
+        got = requests.get(URL, timeout=TIMEOUT)
+        got.raise_for_status()
+    except RequestException as error:
+        sys.exit(f"{URL}: {error}")
+    data = got.json()
+    results = data["results"]
+
+    while data["next"]:
+        try:
+            got = requests.get(data["next"], timeout=TIMEOUT)
+            got.raise_for_status()
+        except RequestException as error:
+            sys.exit(f'{data["next"]}: {error}')
+        data = got.json()
+        results += data["results"]
+    if users is None and groups is None:
         return results
-    return [item for item in results if get_users(item) or get_groups(item)]
+    return [
+        item for item in results if get_users(item, users) or get_groups(item, groups)
+    ]
 
 
-def print_info(info: list):
+def print_info(  # pylint: disable=too-many-arguments,too-many-locals
+    info: list,
+    no_header: bool = False,
+    csv: bool = False,
+    sort: bool = False,
+    reverse: bool = False,
+    verbose: bool = False,
+    users: set[str] | None = None,
+    groups: set[str] | None = None,
+) -> None:
     """
     Print information
     """
-    keys = ("ID", "RATING", "CREATED", "DUE", "PRIO", "ASSIGNED", "PACKAGES", "CHANNELS", "REFERENCES")
-    assigned_width = max(8, max(len(assigned) for item in info for assigned in chain(get_users(item) | get_groups(item))))
-    package_width = max(8, max(len(package) for item in info for package in item['packages']))
-    channel_width = max(8, max(len(version) for item in info for version in item['channellist'] + item['codestreams']))
+    keys = (
+        "ID",
+        "RATING",
+        "CREATED",
+        "DUE",
+        "PRIO",
+        "ASSIGNED",
+        "PACKAGES",
+        "CHANNELS",
+        "REFERENCES",
+    )
+    assigned_width = max(
+        8,
+        max(
+            len(assigned)
+            for item in info
+            for assigned in chain(get_users(item, users) | get_groups(item, groups))
+        ),
+    )
+    package_width = max(
+        8, max(len(package) for item in info for package in item["packages"])
+    )
+    channel_width = max(
+        8,
+        max(
+            len(version)
+            for item in info
+            for version in item["channellist"] + item["codestreams"]
+        ),
+    )
     fmt = f"{{:<16}}  {{:<10}} {{:<11}} {{:<6}}  {{:<5}}  {{:{assigned_width}}}  {{:{package_width}}}  {{:{channel_width}}}  {{}}"
-    if not opts.no_header:
-        print(",".join(keys) if opts.csv else fmt.format(*keys))
-    if opts.sort:
-        info.sort(key=lambda item: item['incident']['priority'], reverse=opts.reverse)
+    if not no_header:
+        print(",".join(keys) if csv else fmt.format(*keys))
+    if sort:
+        info.sort(key=lambda item: item["incident"]["priority"], reverse=reverse)
     for item in info:
         id_rr = f"{item['incident']['project'].replace('SUSE:Maintenance', 'S:M')}:{item['request_id']}"
-        rating = item['incident']['rating']['name']
-        created = item['created'][:len("YYYY-MM-DD")]
-        if item['incident']['deadline'] is not None:
-            enddate = datetime.fromisoformat(item['incident']['deadline'][:-1]) - datetime.utcnow()
+        rating = item["incident"]["rating"]["name"]
+        created = item["created"][: len("YYYY-MM-DD")]
+        due = "-"
+        if item["incident"]["deadline"] is not None:
+            enddate = (
+                datetime.fromisoformat(item["incident"]["deadline"][:-1])
+                - datetime.utcnow()
+            )
             if enddate is not None:
                 due = f"{enddate.days}d"
-        else:
-            due = "-"
-        assigned = sorted(list(get_users(item) | get_groups(item)))
-        item['packages'] = item['packages'] or ["-"]
-        item['packages'].sort()
-        xkey = 'channellist' if item['channellist'] else 'codestreams'
+        assigned = sorted(list(get_users(item, users) | get_groups(item, groups)))
+        item["packages"] = item["packages"] or ["-"]
+        item["packages"].sort()
+        xkey = "channellist" if item["channellist"] else "codestreams"
         item[xkey] = item[xkey] or ["-"]
         item[xkey].sort()
-        if opts.verbose:
-            refs = sorted(_['url'] for _ in item['incident']['references'])
+        if verbose:
+            refs = sorted(_["url"] for _ in item["incident"]["references"])
         else:
             # NOTE: Some entries have only "https:" in their name
-            refs = sorted(_['name'] for _ in item['incident']['references'] if _['name'] != "https:")
+            refs = sorted(
+                _["name"]
+                for _ in item["incident"]["references"]
+                if _["name"] != "https:"
+            )
         refs = refs or [""]
-        if opts.csv:
-            print(",".join((id_rr, rating, created, due, str(item['incident']['priority']), "|".join(assigned), "|".join(item['packages']), "|".join(item[xkey]), "|".join(refs))))
+        if csv:
+            print(
+                id_rr,
+                rating,
+                created,
+                due,
+                str(item["incident"]["priority"]),
+                "|".join(assigned),
+                "|".join(item["packages"]),
+                "|".join(item[xkey]),
+                "|".join(refs),
+                sep=",",
+            )
         else:
-            print(fmt.format(id_rr, rating, created, due, item['incident']['priority'], assigned[0], item['packages'][0], item[xkey][0], refs[0]))
-            for assignee, package, channel, ref in zip_longest(assigned[1:], item['packages'][1:], item[xkey][1:], refs[1:], fillvalue=" "):
-                print(f"{' ': <54}  {assignee:{assigned_width}}  {package:{package_width}}  {channel:{channel_width}}  {ref}")
+            print(
+                fmt.format(
+                    id_rr,
+                    rating,
+                    created,
+                    due,
+                    item["incident"]["priority"],
+                    assigned[0],
+                    item["packages"][0],
+                    item[xkey][0],
+                    refs[0],
+                )
+            )
+            for assignee, package, channel, ref in zip_longest(
+                assigned[1:],
+                item["packages"][1:],
+                item[xkey][1:],
+                refs[1:],
+                fillvalue=" ",
+            ):
+                print(
+                    f"{' ': <54}  {assignee:{assigned_width}}  {package:{package_width}}  {channel:{channel_width}}  {ref}"
+                )
 
 
 def parse_opts():
@@ -105,54 +198,51 @@ def parse_opts():
     """
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '-a', '--all', action='store_true',
-        help="Show all. Ignore -g & -u options")
+        "-a", "--all", action="store_true", help="Show all. Ignore -g & -u options"
+    )
+    parser.add_argument("-c", "--csv", action="store_true", help="CSV output")
     parser.add_argument(
-        '-c', '--csv', action='store_true',
-        help="CSV output")
+        "-g",
+        "--group",
+        action="append",
+        help="Filter by group. May be specified multiple times",
+    )
     parser.add_argument(
-        '-g', '--group', action='append',
-        help="Filter by group. May be specified multiple times")
+        "-H", "--no-header", action="store_true", help="Do not show header"
+    )
+    parser.add_argument("-j", "--json", action="store_true", help="JSON output")
     parser.add_argument(
-        '-H', '--no-header', action='store_true',
-        help="Do not show header")
+        "-k",
+        "--insecure",
+        action="store_true",
+        help="Allow insecure server connections when using SSL",
+    )
     parser.add_argument(
-        '-j', '--json', action='store_true',
-        help="JSON output")
+        "-s", "--sort", action="store_true", help="Sort items by priority"
+    )
+    parser.add_argument("-r", "--reverse", action="store_false", help="reverse sort")
     parser.add_argument(
-        '-k', '--insecure', action='store_true',
-        help="Allow insecure server connections when using SSL")
+        "-u",
+        "--user",
+        action="append",
+        help="Filter by user. May be specified multiple times",
+    )
     parser.add_argument(
-        '-s', '--sort', action='store_true',
-        help="Sort items by priority")
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Verbose. Show URL's for references",
+    )
     parser.add_argument(
-        '-r', '--reverse', action='store_false',
-        help="reverse sort")
-    parser.add_argument(
-        '-u', '--user', action='append',
-        help="Filter by user. May be specified multiple times")
-    parser.add_argument(
-        '-v', '--verbose', action='store_true',
-        help="Verbose. Show URL's for references")
-    parser.add_argument(
-        '--version', action='version', version=__version__,
-        help="Show version and exit")
+        "--version", action="version", version=__version__, help="Show version and exit"
+    )
     return parser.parse_args()
 
 
-def main():
+def main() -> None:
     """
     Main function
     """
-    info = get_info()
-    if opts.json:
-        print(json.dumps(info))
-    else:
-        if info:
-            print_info(info)
-
-
-if __name__ == "__main__":
     opts = parse_opts()
     if not opts.user and not opts.group:
         opts.group = GROUPS
@@ -160,15 +250,24 @@ if __name__ == "__main__":
     opts.group = set(opts.group) if opts.group else set()
     if opts.all:
         opts.user = opts.group = None
-    ctx = ssl.create_default_context()
-    if opts.insecure:
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
-    # Check if host is accessible
+    info = get_info(opts.user, opts.group)
+    if opts.json:
+        print(json.dumps(info))
+    elif info:
+        print_info(
+            info,
+            no_header=opts.no_header,
+            csv=opts.csv,
+            sort=opts.sort,
+            reverse=opts.reverse,
+            verbose=opts.verbose,
+            users=opts.user,
+            groups=opts.group,
+        )
+
+
+if __name__ == "__main__":
     try:
-        with urlopen("https://smelt.suse.de/static/img/favicon.ico", context=ctx):
-            main()
-    except (HTTPError, URLError) as err:
-        sys.exit(f"ERROR: {err.reason}")
+        main()
     except KeyboardInterrupt:
         sys.exit(1)

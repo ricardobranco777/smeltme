@@ -1,25 +1,29 @@
-BIN=smeltme
-FILES=$(BIN)
+FILES=smeltme
+BIN=$(FILES)
 
 .PHONY: all
-all: flake8 pylint mypy
+all: flake8 pylint mypy black
 
 .PHONY: flake8
 flake8:
-	@flake8 --ignore=E501 $(FILES)
+	@flake8 --ignore=E501,W503 $(FILES)
 
 .PHONY: pylint
 pylint:
-	@pylint --disable=line-too-long,too-many-locals $(FILES)
+	@pylint --disable=line-too-long $(FILES)
 
 .PHONY: mypy
 mypy:
-	@mypy $(FILES)
+	@for f in $(FILES) ; do mypy $$f ; done
+
+.PHONY: black
+black:
+	@black --check $(FILES)
 
 .PHONY: install
 install:
-	install -m 0755 $(BIN) /usr/local/bin/ 2>/dev/null || install -m 0755 $(BIN) $(HOME)/bin/
+	install -m 0755 $(BIN) $(HOME)/bin/
 
 .PHONY: uninstall
 uninstall:
-	rm -f /usr/local/bin/$(BIN) 2>/dev/null || rm -f $(HOME)/bin/$(BIN)
+	cd $(HOME)/bin ; rm -f $(BIN)

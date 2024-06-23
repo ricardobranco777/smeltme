@@ -4,9 +4,13 @@
 
 Parse https://smelt.suse.de/overview/ for specified groups
 
+Docker image available at `ghcr.io/ricardobranco777/smeltme:latest`
+
 ## Requirements
 
 - Python 3.11+
+- python3-requests
+- python3-requests-toolbelt (optional for debugging)
 
 ## Options
 

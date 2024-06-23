@@ -6,7 +6,7 @@ Parse https://smelt.suse.de/overview/ for specified groups or users
 import argparse
 import json
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from itertools import chain, zip_longest
 
 import requests
@@ -131,10 +131,9 @@ def print_info(  # pylint: disable=too-many-arguments,too-many-locals
         created = item["created"][: len("YYYY-MM-DD")]
         due = "-"
         if item["incident"]["deadline"] is not None:
-            enddate = (
-                datetime.fromisoformat(item["incident"]["deadline"][:-1])
-                - datetime.utcnow()
-            )
+            enddate = datetime.fromisoformat(
+                item["incident"]["deadline"][:-1]
+            ) - datetime.now(timezone.utc)
             if enddate is not None:
                 due = f"{enddate.days}d"
         assigned = sorted(list(get_users(item, users) | get_groups(item, groups)))

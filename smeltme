@@ -13,7 +13,7 @@ import requests
 from requests.exceptions import RequestException
 
 
-__version__ = "1.4.4"
+__version__ = "1.4.5"
 
 GROUPS = ["qam-sle", "qam-emergency"]
 URL = "https://smelt.suse.de/api/v1/overview/testing/"

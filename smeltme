@@ -211,12 +211,6 @@ def parse_opts():
     )
     parser.add_argument("-j", "--json", action="store_true", help="JSON output")
     parser.add_argument(
-        "-k",
-        "--insecure",
-        action="store_true",
-        help="Allow insecure server connections when using SSL",
-    )
-    parser.add_argument(
         "-s", "--sort", action="store_true", help="Sort items by priority"
     )
     parser.add_argument("-r", "--reverse", action="store_false", help="reverse sort")

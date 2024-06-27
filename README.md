@@ -2,7 +2,7 @@
 
 # smeltme
 
-Parse https://smelt.suse.de/overview/ for specified groups
+Parse https://smelt.suse.de/overview/ using [API](https://tools.io.suse.de/smelt/user/api/index.html)
 
 Docker image available at `ghcr.io/ricardobranco777/smeltme:latest`
 

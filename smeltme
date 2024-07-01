@@ -16,14 +16,10 @@ from requests.exceptions import RequestException
 try:
     from requests_toolbelt.utils import dump  # type: ignore
 except ModuleNotFoundError:
-
-    def dump():
-        "Fake dump"
-
-    dump.dump_all = lambda _: bytes()
+    dump = None  # pylint: disable=invalid-name
 
 
-__version__ = "1.4.5"
+VERSION = "1.4.5"
 
 GROUPS = ["qam-sle", "qam-emergency"]
 URL = "https://smelt.suse.de/api/v1/overview/testing/"
@@ -38,7 +34,8 @@ def debugme(got, *args, **kwargs):  # pylint: disable=unused-argument
     Print requests response
     """
     got.hook_called = True
-    print(dump.dump_all(got).decode("utf-8"), file=sys.stderr)
+    if dump is not None:
+        print(dump.dump_all(got).decode("utf-8"), file=sys.stderr)
     return got
 
 
@@ -248,9 +245,7 @@ def parse_opts():
         action="store_true",
         help="Verbose. Show URL's for references",
     )
-    parser.add_argument(
-        "--version", action="version", version=__version__, help="Show version and exit"
-    )
+    parser.add_argument("--version", action="version", version=VERSION)
     return parser.parse_args()
 
 

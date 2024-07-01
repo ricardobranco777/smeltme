@@ -27,7 +27,7 @@ Docker image available at `ghcr.io/ricardobranco777/smeltme:latest`
   -s, --sort            Sort items by priority
   -r, --reverse         reverse sort
   -v, --verbose         Verbose. Show URL's for references
-  --version             Show version and exit
+  --version             show program's version number and exit
 ```
 
 ## Example

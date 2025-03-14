@@ -96,7 +96,7 @@ def get_info(
     ]
 
 
-def print_info(  # pylint: disable=too-many-arguments,too-many-locals
+def print_info(  # pylint: disable=too-many-arguments,too-many-locals,too-many-positional-arguments
     info: list,
     no_header: bool = False,
     csv: bool = False,

@@ -61,12 +61,10 @@ def get_info() -> list[dict]:
     return results
 
 
-def print_info(  # pylint: disable=too-many-arguments,too-many-locals,too-many-positional-arguments
+def print_info(  # pylint: disable=too-many-locals
     info: list,
     no_header: bool = False,
     csv: bool = False,
-    sort: bool = False,
-    reverse: bool = False,
     verbose: bool = False,
 ) -> None:
     """
@@ -96,8 +94,6 @@ def print_info(  # pylint: disable=too-many-arguments,too-many-locals,too-many-p
     fmt = f"{{:<16}}  {{:<10}} {{:<11}} {{:<6}}  {{:<5}}  {{:{package_width}}}  {{:{channel_width}}}  {{}}"
     if not no_header:
         print(",".join(keys) if csv else fmt.format(*keys))
-    if sort:
-        info.sort(key=lambda item: item["incident"]["priority"], reverse=reverse)
     for item in info:
         id_rr = f"{item['incident']['project'].replace('SUSE:Maintenance', 'S:M')}:{item['request_id']}"
         rating = item["incident"]["rating"]["name"]
@@ -170,10 +166,6 @@ def parse_opts():
         "-H", "--no-header", action="store_true", help="Do not show header"
     )
     parser.add_argument(
-        "-s", "--sort", action="store_true", help="Sort items by priority"
-    )
-    parser.add_argument("-r", "--reverse", action="store_false", help="reverse sort")
-    parser.add_argument(
         "-v",
         "--verbose",
         action="store_true",
@@ -189,15 +181,9 @@ def main() -> None:
     """
     opts = parse_opts()
     info = get_info()
-    if info:
-        print_info(
-            info,
-            no_header=opts.no_header,
-            csv=opts.csv,
-            sort=opts.sort,
-            reverse=opts.reverse,
-            verbose=opts.verbose,
-        )
+    if not info:
+        return
+    print_info(info, no_header=opts.no_header, csv=opts.csv, verbose=opts.verbose)
 
 
 if __name__ == "__main__":

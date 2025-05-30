@@ -6,8 +6,8 @@ RUN	zypper addrepo https://download.opensuse.org/repositories/SUSE:/CA/openSUSE_
 		python3-requests-toolbelt && \
 	zypper clean -a
 
-COPY	smeltme /smeltme
+COPY	smeltme.py /
 
 VOLUME	/root
 
-ENTRYPOINT ["/usr/bin/python3", "/smeltme"]
+ENTRYPOINT ["/usr/bin/python3", "/smeltme.py"]

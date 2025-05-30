@@ -64,12 +64,7 @@ def print_info(info: list, verbose: bool = False) -> None:
     """
     Print information
     """
-    keys = (
-        "ID",
-        "PACKAGES",
-        "CHANNELS",
-        "REFERENCES",
-    )
+    keys = ("ID", "PACKAGES", "CHANNELS", "REFERENCES")
     package_width = max(
         8, max(len(package) for item in info for package in item["packages"])
     )
@@ -100,14 +95,7 @@ def print_info(info: list, verbose: bool = False) -> None:
                 if _["name"] != "https:"
             )
         refs = refs or [""]
-        print(
-            fmt.format(
-                id_rr,
-                item["packages"][0],
-                item[xkey][0],
-                refs[0],
-            )
-        )
+        print(fmt.format(id_rr, item["packages"][0], item[xkey][0], refs[0]))
         for package, channel, ref in zip_longest(
             item["packages"][1:],
             item[xkey][1:],

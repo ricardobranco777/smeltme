@@ -4,7 +4,6 @@ Parse https://smelt.suse.de/overview/
 """
 
 import argparse
-import json
 import os
 import sys
 from datetime import datetime, timezone
@@ -170,7 +169,6 @@ def parse_opts():
     parser.add_argument(
         "-H", "--no-header", action="store_true", help="Do not show header"
     )
-    parser.add_argument("-j", "--json", action="store_true", help="JSON output")
     parser.add_argument(
         "-s", "--sort", action="store_true", help="Sort items by priority"
     )
@@ -191,9 +189,7 @@ def main() -> None:
     """
     opts = parse_opts()
     info = get_info()
-    if opts.json:
-        print(json.dumps(info))
-    elif info:
+    if info:
         print_info(
             info,
             no_header=opts.no_header,

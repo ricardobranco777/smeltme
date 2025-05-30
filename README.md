@@ -18,7 +18,6 @@ Docker image available at `ghcr.io/ricardobranco777/smeltme:latest`
   -h, --help            show this help message and exit
   -c, --csv             CSV output
   -H, --no-header       Do not show header
-  -j, --json            JSON output
   -s, --sort            Sort items by priority
   -r, --reverse         reverse sort
   -v, --verbose         Verbose. Show URL's for references

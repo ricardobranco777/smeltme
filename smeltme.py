@@ -6,7 +6,6 @@ Parse https://smelt.suse.de/overview/
 import argparse
 import os
 import sys
-from datetime import datetime, timezone
 from itertools import zip_longest
 
 import requests
@@ -61,19 +60,12 @@ def get_info() -> list[dict]:
     return results
 
 
-def print_info(  # pylint: disable=too-many-locals
-    info: list,
-    verbose: bool = False,
-) -> None:
+def print_info(info: list, verbose: bool = False) -> None:
     """
     Print information
     """
     keys = (
         "ID",
-        "RATING",
-        "CREATED",
-        "DUE",
-        "PRIO",
         "PACKAGES",
         "CHANNELS",
         "REFERENCES",
@@ -89,19 +81,10 @@ def print_info(  # pylint: disable=too-many-locals
             for version in item["channellist"] + item["codestreams"]
         ),
     )
-    fmt = f"{{:<16}}  {{:<10}} {{:<11}} {{:<6}}  {{:<5}}  {{:{package_width}}}  {{:{channel_width}}}  {{}}"
+    fmt = f"{{:<16}}  {{:{package_width}}}  {{:{channel_width}}}  {{}}"
     print(fmt.format(*keys))
     for item in info:
         id_rr = f"{item['incident']['project'].replace('SUSE:Maintenance', 'S:M')}:{item['request_id']}"
-        rating = item["incident"]["rating"]["name"]
-        created = item["created"][: len("YYYY-MM-DD")]
-        due = "-"
-        if item["incident"]["deadline"] is not None:
-            enddate = datetime.fromisoformat(item["incident"]["deadline"][:-1]).replace(
-                tzinfo=timezone.utc
-            ) - datetime.now(timezone.utc)
-            if enddate is not None:
-                due = f"{enddate.days}d"
         item["packages"] = item["packages"] or ["-"]
         item["packages"].sort()
         xkey = "channellist" if item["channellist"] else "codestreams"
@@ -120,10 +103,6 @@ def print_info(  # pylint: disable=too-many-locals
         print(
             fmt.format(
                 id_rr,
-                rating,
-                created,
-                due,
-                item["incident"]["priority"],
                 item["packages"][0],
                 item[xkey][0],
                 refs[0],
@@ -136,7 +115,7 @@ def print_info(  # pylint: disable=too-many-locals
             fillvalue=" ",
         ):
             print(
-                f"{' ': <54}  {package:{package_width}}  {channel:{channel_width}}  {ref}"
+                f"{' ': <16}  {package:{package_width}}  {channel:{channel_width}}  {ref}"
             )
 
 

@@ -16,14 +16,9 @@ Docker image available at `ghcr.io/ricardobranco777/smeltme:latest`
 
 ```
   -h, --help            show this help message and exit
-  -a, --all             Show all. Ignore -g & -u options
   -c, --csv             CSV output
-  -g GROUP, --group GROUP
-                        Filter by group. May be specified multiple times
   -H, --no-header       Do not show header
   -j, --json            JSON output
-  -u USER, --user USER
-                        Filter by user. May be specified multiple times
   -s, --sort            Sort items by priority
   -r, --reverse         reverse sort
   -v, --verbose         Verbose. Show URL's for references

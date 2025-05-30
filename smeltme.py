@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Parse https://smelt.suse.de/overview/ for specified groups or users
+Parse https://smelt.suse.de/overview/
 """
 
 import argparse
@@ -8,7 +8,7 @@ import json
 import os
 import sys
 from datetime import datetime, timezone
-from itertools import chain, zip_longest
+from itertools import zip_longest
 
 import requests
 from requests.exceptions import RequestException
@@ -19,9 +19,8 @@ except ModuleNotFoundError:
     dump = None  # pylint: disable=invalid-name
 
 
-VERSION = "1.4.5"
+VERSION = "2.0"
 
-GROUPS = ["qam-sle", "qam-emergency"]
 URL = "https://smelt.suse.de/api/v1/overview/testing/"
 TIMEOUT = 15
 
@@ -39,37 +38,7 @@ def debugme(got, *args, **kwargs):  # pylint: disable=unused-argument
     return got
 
 
-def get_users(item: dict, users: set[str] | None = None) -> set[str]:
-    """
-    Filter users from item['unfinished_reviews'] and return a set
-    """
-    assigned = {
-        _["assigned_by_user"]["username"]
-        for _ in item["unfinished_reviews"]
-        if _["assigned_by_user"]
-    }
-    if users is None:
-        return assigned
-    return assigned & users
-
-
-def get_groups(item: dict, groups: set[str] | None = None) -> set[str]:
-    """
-    Filter groups from item['unfinished_reviews'] and return a set
-    """
-    assigned = {
-        _["assigned_by_group"]["name"]
-        for _ in item["unfinished_reviews"]
-        if _["assigned_by_group"]
-    }
-    if groups is None:
-        return assigned
-    return assigned & groups
-
-
-def get_info(
-    users: set[str] | None = None, groups: set[str] | None = None
-) -> list[dict]:
+def get_info() -> list[dict]:
     """
     Get information
     """
@@ -89,11 +58,8 @@ def get_info(
             sys.exit(f'{data["next"]}: {error}')
         data = got.json()
         results += data["results"]
-    if users is None and groups is None:
-        return results
-    return [
-        item for item in results if get_users(item, users) or get_groups(item, groups)
-    ]
+
+    return results
 
 
 def print_info(  # pylint: disable=too-many-arguments,too-many-locals,too-many-positional-arguments
@@ -103,8 +69,6 @@ def print_info(  # pylint: disable=too-many-arguments,too-many-locals,too-many-p
     sort: bool = False,
     reverse: bool = False,
     verbose: bool = False,
-    users: set[str] | None = None,
-    groups: set[str] | None = None,
 ) -> None:
     """
     Print information
@@ -115,18 +79,9 @@ def print_info(  # pylint: disable=too-many-arguments,too-many-locals,too-many-p
         "CREATED",
         "DUE",
         "PRIO",
-        "ASSIGNED",
         "PACKAGES",
         "CHANNELS",
         "REFERENCES",
-    )
-    assigned_width = max(
-        8,
-        max(
-            len(assigned)
-            for item in info
-            for assigned in chain(get_users(item, users) | get_groups(item, groups))
-        ),
     )
     package_width = max(
         8, max(len(package) for item in info for package in item["packages"])
@@ -139,7 +94,7 @@ def print_info(  # pylint: disable=too-many-arguments,too-many-locals,too-many-p
             for version in item["channellist"] + item["codestreams"]
         ),
     )
-    fmt = f"{{:<16}}  {{:<10}} {{:<11}} {{:<6}}  {{:<5}}  {{:{assigned_width}}}  {{:{package_width}}}  {{:{channel_width}}}  {{}}"
+    fmt = f"{{:<16}}  {{:<10}} {{:<11}} {{:<6}}  {{:<5}}  {{:{package_width}}}  {{:{channel_width}}}  {{}}"
     if not no_header:
         print(",".join(keys) if csv else fmt.format(*keys))
     if sort:
@@ -155,7 +110,6 @@ def print_info(  # pylint: disable=too-many-arguments,too-many-locals,too-many-p
             ) - datetime.now(timezone.utc)
             if enddate is not None:
                 due = f"{enddate.days}d"
-        assigned = sorted(list(get_users(item, users) | get_groups(item, groups)))
         item["packages"] = item["packages"] or ["-"]
         item["packages"].sort()
         xkey = "channellist" if item["channellist"] else "codestreams"
@@ -178,7 +132,6 @@ def print_info(  # pylint: disable=too-many-arguments,too-many-locals,too-many-p
                 created,
                 due,
                 str(item["incident"]["priority"]),
-                "|".join(assigned),
                 "|".join(item["packages"]),
                 "|".join(item[xkey]),
                 "|".join(refs),
@@ -192,21 +145,19 @@ def print_info(  # pylint: disable=too-many-arguments,too-many-locals,too-many-p
                     created,
                     due,
                     item["incident"]["priority"],
-                    assigned[0],
                     item["packages"][0],
                     item[xkey][0],
                     refs[0],
                 )
             )
-            for assignee, package, channel, ref in zip_longest(
-                assigned[1:],
+            for package, channel, ref in zip_longest(
                 item["packages"][1:],
                 item[xkey][1:],
                 refs[1:],
                 fillvalue=" ",
             ):
                 print(
-                    f"{' ': <54}  {assignee:{assigned_width}}  {package:{package_width}}  {channel:{channel_width}}  {ref}"
+                    f"{' ': <54}  {package:{package_width}}  {channel:{channel_width}}  {ref}"
                 )
 
 
@@ -215,16 +166,7 @@ def parse_opts():
     Parse options and arguments
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-a", "--all", action="store_true", help="Show all. Ignore -g & -u options"
-    )
     parser.add_argument("-c", "--csv", action="store_true", help="CSV output")
-    parser.add_argument(
-        "-g",
-        "--group",
-        action="append",
-        help="Filter by group. May be specified multiple times",
-    )
     parser.add_argument(
         "-H", "--no-header", action="store_true", help="Do not show header"
     )
@@ -233,12 +175,6 @@ def parse_opts():
         "-s", "--sort", action="store_true", help="Sort items by priority"
     )
     parser.add_argument("-r", "--reverse", action="store_false", help="reverse sort")
-    parser.add_argument(
-        "-u",
-        "--user",
-        action="append",
-        help="Filter by user. May be specified multiple times",
-    )
     parser.add_argument(
         "-v",
         "--verbose",
@@ -254,13 +190,7 @@ def main() -> None:
     Main function
     """
     opts = parse_opts()
-    if not opts.user and not opts.group:
-        opts.group = GROUPS
-    opts.user = set(opts.user) if opts.user else set()
-    opts.group = set(opts.group) if opts.group else set()
-    if opts.all:
-        opts.user = opts.group = None
-    info = get_info(opts.user, opts.group)
+    info = get_info()
     if opts.json:
         print(json.dumps(info))
     elif info:
@@ -271,8 +201,6 @@ def main() -> None:
             sort=opts.sort,
             reverse=opts.reverse,
             verbose=opts.verbose,
-            users=opts.user,
-            groups=opts.group,
         )
 
 

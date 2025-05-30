@@ -63,8 +63,6 @@ def get_info() -> list[dict]:
 
 def print_info(  # pylint: disable=too-many-locals
     info: list,
-    no_header: bool = False,
-    csv: bool = False,
     verbose: bool = False,
 ) -> None:
     """
@@ -92,8 +90,7 @@ def print_info(  # pylint: disable=too-many-locals
         ),
     )
     fmt = f"{{:<16}}  {{:<10}} {{:<11}} {{:<6}}  {{:<5}}  {{:{package_width}}}  {{:{channel_width}}}  {{}}"
-    if not no_header:
-        print(",".join(keys) if csv else fmt.format(*keys))
+    print(fmt.format(*keys))
     for item in info:
         id_rr = f"{item['incident']['project'].replace('SUSE:Maintenance', 'S:M')}:{item['request_id']}"
         rating = item["incident"]["rating"]["name"]
@@ -120,40 +117,27 @@ def print_info(  # pylint: disable=too-many-locals
                 if _["name"] != "https:"
             )
         refs = refs or [""]
-        if csv:
-            print(
+        print(
+            fmt.format(
                 id_rr,
                 rating,
                 created,
                 due,
-                str(item["incident"]["priority"]),
-                "|".join(item["packages"]),
-                "|".join(item[xkey]),
-                "|".join(refs),
-                sep=",",
+                item["incident"]["priority"],
+                item["packages"][0],
+                item[xkey][0],
+                refs[0],
             )
-        else:
+        )
+        for package, channel, ref in zip_longest(
+            item["packages"][1:],
+            item[xkey][1:],
+            refs[1:],
+            fillvalue=" ",
+        ):
             print(
-                fmt.format(
-                    id_rr,
-                    rating,
-                    created,
-                    due,
-                    item["incident"]["priority"],
-                    item["packages"][0],
-                    item[xkey][0],
-                    refs[0],
-                )
+                f"{' ': <54}  {package:{package_width}}  {channel:{channel_width}}  {ref}"
             )
-            for package, channel, ref in zip_longest(
-                item["packages"][1:],
-                item[xkey][1:],
-                refs[1:],
-                fillvalue=" ",
-            ):
-                print(
-                    f"{' ': <54}  {package:{package_width}}  {channel:{channel_width}}  {ref}"
-                )
 
 
 def parse_opts():
@@ -161,10 +145,6 @@ def parse_opts():
     Parse options and arguments
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument("-c", "--csv", action="store_true", help="CSV output")
-    parser.add_argument(
-        "-H", "--no-header", action="store_true", help="Do not show header"
-    )
     parser.add_argument(
         "-v",
         "--verbose",
@@ -183,7 +163,7 @@ def main() -> None:
     info = get_info()
     if not info:
         return
-    print_info(info, no_header=opts.no_header, csv=opts.csv, verbose=opts.verbose)
+    print_info(info, verbose=opts.verbose)
 
 
 if __name__ == "__main__":

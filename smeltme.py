@@ -238,7 +238,7 @@ def print_info(verbose: bool = False) -> None:
     urls = [
         r["url"]
         for i in incidents
-        for r in i["incident"]["references"] + i["references"]
+        for r in i["incident"]["references"]
         if not r["name"].startswith("CVE-")
     ]
     urls = list(set(urls))
@@ -259,12 +259,9 @@ def print_info(verbose: bool = False) -> None:
         incident["packages"].sort()
         versions = list(sorted(v.split(":")[1] for v in incident["codestreams"]))
         bugrefs: list[Reference] = [
-            Reference(url=url, title=titles.get(url, ""))
-            for url in {
-                r["url"]
-                for r in incident["incident"]["references"] + incident["references"]
-                if not r["name"].startswith("CVE-")
-            }
+            Reference(url=r["url"], title=titles.get(r["url"], ""))
+            for r in incident["incident"]["references"]
+            if not r["name"].startswith("CVE-")
         ]
         bugrefs = bugrefs or [Reference(url="", title="")]
         bugrefs.sort()

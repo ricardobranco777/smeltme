@@ -241,18 +241,17 @@ def print_info(verbose: bool = False) -> None:
         ]
         bugrefs = list(set(bugrefs)) or [""]
         bugrefs.sort()
-        print(fmt.format(request, incident["packages"][0], versions[0], bugrefs[0]))
+        print(
+            fmt.format(request, incident["packages"][0], versions[0], bugrefs[0]),
+            titles.get(bugrefs[0], ""),
+        )
         for package, version, bugref in zip_longest(
             incident["packages"][1:],
             versions[1:],
             bugrefs[1:],
             fillvalue=" ",
         ):
-            print(fmt.format("", package, version, bugref), end="")
-            if verbose:
-                print(" ", titles.get(bugref, ""))
-            else:
-                print()
+            print(fmt.format("", package, version, bugref), titles.get(bugref, ""))
 
 
 def main() -> None:

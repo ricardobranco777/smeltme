@@ -7,7 +7,7 @@ import os
 import sys
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from itertools import zip_longest
 from urllib.parse import urlparse
 
@@ -29,7 +29,30 @@ VERSION = "1.9"
 session = requests.Session()
 
 
-@dataclass
+@dataclass(frozen=True, order=True)
+class Reference:
+    """
+    Reference class
+    """
+
+    url: str
+    title: str = field(compare=False)
+
+    def __str__(self) -> str:
+        if not self.url:
+            return ""
+        # name sucks so we rebuild it here
+        tag = "".join([s[0] for s in str(urlparse(self.url).hostname).split(".")])
+        issue = (
+            self.url.split("=")[-1] if "=" in self.url else os.path.basename(self.url)
+        )
+        tag = f"{tag}#{issue}"
+        if self.title:
+            return f"{tag:<13}  {self.title}"
+        return tag
+
+
+@dataclass(frozen=True)
 class Issue:
     """
     Issue class
@@ -116,7 +139,8 @@ def get_bugzilla_issues(host: str, urls: list[str]) -> list[Issue] | None:
         issues.extend(
             [
                 Issue(
-                    url=f"https://{host}/show_bug.cgi?id={i['id']}", title=i["summary"]
+                    url=f"https://{host}/show_bug.cgi?id={i['id']}",
+                    title=i["summary"],
                 )
                 for i in got.json()["bugs"]
             ]
@@ -234,24 +258,24 @@ def print_info(verbose: bool = False) -> None:
         )
         incident["packages"].sort()
         versions = list(sorted(v.split(":")[1] for v in incident["codestreams"]))
-        bugrefs = [
-            r["url"]
-            for r in incident["incident"]["references"] + incident["references"]
-            if not r["name"].startswith("CVE-")
+        bugrefs: list[Reference] = [
+            Reference(url=url, title=titles.get(url, ""))
+            for url in {
+                r["url"]
+                for r in incident["incident"]["references"] + incident["references"]
+                if not r["name"].startswith("CVE-")
+            }
         ]
-        bugrefs = list(set(bugrefs)) or [""]
+        bugrefs = bugrefs or [Reference(url="", title="")]
         bugrefs.sort()
-        print(
-            fmt.format(request, incident["packages"][0], versions[0], bugrefs[0]),
-            titles.get(bugrefs[0], ""),
-        )
+        print(fmt.format(request, incident["packages"][0], versions[0], bugrefs[0]))
         for package, version, bugref in zip_longest(
             incident["packages"][1:],
             versions[1:],
             bugrefs[1:],
             fillvalue=" ",
         ):
-            print(fmt.format("", package, version, bugref), titles.get(bugref, ""))
+            print(fmt.format("", package, version, bugref))
 
 
 def main() -> None:

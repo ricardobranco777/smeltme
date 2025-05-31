@@ -246,7 +246,7 @@ def print_info(verbose: bool = False) -> None:
     if verbose:
         titles = get_titles(urls)
     package_width = max(8, max(len(p) for i in incidents for p in i["packages"]))
-    fmt = f"{{:<20}}  {{:{package_width}}}  {{:12}}  {{}}"
+    fmt = f"{{:<16}}  {{:{package_width}}}  {{:12}}  {{}}"
     for incident in incidents:
         if not incident["packages"] or incident["packages"][0] == "update-test-trivial":
             continue

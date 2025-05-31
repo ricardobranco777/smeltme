@@ -1,11 +1,12 @@
 """
-smelta
+smeltme
 """
 
 import argparse
 import os
 import sys
 from collections import defaultdict
+from dataclasses import dataclass
 from itertools import zip_longest
 from urllib.parse import urlparse
 
@@ -25,6 +26,16 @@ TIMEOUT = 15
 VERSION = "1.9"
 
 session = requests.Session()
+
+
+@dataclass
+class Issue:
+    """
+    Issue class
+    """
+
+    url: str
+    title: str
 
 
 def debugme(got, *args, **kwargs):  # pylint: disable=unused-argument
@@ -77,18 +88,18 @@ def get_incidents(route: str = "testing") -> list[dict] | None:
     return results
 
 
-def get_bugzilla_issues(host: str, issues: list[str]) -> list[dict] | None:
+def get_bugzilla_issues(host: str, urls: list[str]) -> list[Issue] | None:
     """
     Get Bugzilla issues
     """
     if not BUGZILLA_TOKEN and host in ("bugzilla.suse.com", "bugzilla.opensuse.org"):
         return None
-    issues = [i.split("=")[-1] for i in issues]
+    ids = [u.split("=")[-1] for u in urls]
     url = f"https://{host}/rest/bug"
-    bugs = []
-    for i in range(0, len(issues), MAX_ISSUES):
+    issues: list[Issue] = []
+    for i in range(0, len(ids), MAX_ISSUES):
         params = {
-            "id": issues[i : i + MAX_ISSUES],
+            "id": ids[i : i + MAX_ISSUES],
             "include_fields": "id,summary",
         }
         if host in ("bugzilla.suse.com", "bugzilla.opensuse.org"):
@@ -101,36 +112,46 @@ def get_bugzilla_issues(host: str, issues: list[str]) -> list[dict] | None:
             error = str(exc).split("?", maxsplit=1)[0]
             print(f"ERROR: {url}: {error}", file=sys.stderr)
             return None
-        bugs.extend(got.json()["bugs"])
-    return bugs
+        issues.extend(
+            [
+                Issue(
+                    url=f"https://{host}/show_bug.cgi?id={i['id']}", title=i["summary"]
+                )
+                for i in got.json()["bugs"]
+            ]
+        )
+    return issues
 
 
-def get_jira_issues(issues: list[str]) -> list[dict] | None:
+def get_jira_issues(urls: list[str]) -> list[Issue] | None:
     """
     Get Jira issues
     """
     if not JIRA_TOKEN:
         return None
-    issues = [os.path.basename(i) for i in issues]
+    ids = [os.path.basename(u) for u in urls]
     url = "https://jira.suse.com/rest/api/2/search"
     headers = {"Authorization": f"Bearer {JIRA_TOKEN}"}
-    bugs = []
-    for i in range(0, len(issues), MAX_ISSUES):
+    issues: list[Issue] = []
+    for i in range(0, len(ids), MAX_ISSUES):
         params = {
             "fields": "summary",
-            "jql": f"key in ({','.join(issues[i : i + MAX_ISSUES])})",
+            "jql": f"key in ({','.join(ids[i : i + MAX_ISSUES])})",
         }
         data = get_json(url, headers=headers, params=params, key="issues")
         if data is None:
             return None
         assert isinstance(data, list)
-        bugs.extend(
+        issues.extend(
             [
-                {"id": issue["key"], "summary": issue["fields"]["summary"]}
-                for issue in data
+                Issue(
+                    url=f"https://jira.suse.com/browse/{i['key']}",
+                    title=i["fields"]["summary"],
+                )
+                for i in data
             ]
         )
-    return bugs
+    return issues
 
 
 def get_titles(urls: list[str]) -> dict[str, str]:
@@ -151,20 +172,14 @@ def get_titles(urls: list[str]) -> dict[str, str]:
     for host in bugzillas:
         issues = get_bugzilla_issues(host, bugzillas[host])
         if issues is not None:
-            titles |= {
-                f"https://{host}/show_bug.cgi?id={issue['id']}": issue["summary"]
-                for issue in issues
-            }
+            titles |= {i.url: i.title for i in issues}
 
     # Handle Jira
-    jiras = get_jira_issues(
+    issues = get_jira_issues(
         list(filter(lambda u: u.startswith("https://jira.suse.com"), urls))
     )
-    if jiras is not None:
-        titles |= {
-            f"https://jira.suse.com/browse/{issue['id']}": issue["summary"]
-            for issue in jiras
-        }
+    if issues is not None:
+        titles |= {i.url: i.title for i in issues}
     return titles
 
 

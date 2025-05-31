@@ -6,6 +6,7 @@ import argparse
 import os
 import sys
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from itertools import zip_longest
 from urllib.parse import urlparse
@@ -159,27 +160,30 @@ def get_titles(urls: list[str]) -> dict[str, str]:
     Get titles of issues
     """
     titles: dict[str, str] = {}
-
-    # Handle multiple Bugzillas
     bugzillas: dict[str, list[str]] = defaultdict(list)
+    jira_urls: list[str] = []
+
     for url in urls:
         urlx = urlparse(url)
         if urlx.netloc.startswith("bugzilla."):
             bugzillas[urlx.netloc].append(url)
-    # Broken REST
-    if "bugzilla.gnome.org" in bugzillas:
-        del bugzillas["bugzilla.gnome.org"]
-    for host in bugzillas:
-        issues = get_bugzilla_issues(host, bugzillas[host])
-        if issues is not None:
-            titles |= {i.url: i.title for i in issues}
+        elif urlx.netloc.startswith("jira."):
+            jira_urls.append(url)
 
-    # Handle Jira
-    issues = get_jira_issues(
-        list(filter(lambda u: u.startswith("https://jira.suse.com"), urls))
-    )
-    if issues is not None:
-        titles |= {i.url: i.title for i in issues}
+    # Remove unsupported Bugzillas
+    bugzillas.pop("bugzilla.gnome.org", None)
+
+    with ThreadPoolExecutor() as executor:
+        futures = []
+        for host, bug_urls in bugzillas.items():
+            futures.append(executor.submit(get_bugzilla_issues, host, bug_urls))
+        if jira_urls:
+            futures.append(executor.submit(get_jira_issues, jira_urls))
+        for future in as_completed(futures):
+            issues = future.result()
+            if issues is not None:
+                titles |= {i.url: i.title for i in issues}
+
     return titles
 
 

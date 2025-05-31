@@ -7,7 +7,7 @@ import os
 import sys
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from itertools import zip_longest
 from urllib.parse import urlparse
 
@@ -29,14 +29,14 @@ VERSION = "1.9"
 session = requests.Session()
 
 
-@dataclass(frozen=True, order=True)
+@dataclass(frozen=True)
 class Reference:
     """
     Reference class
     """
 
     url: str
-    title: str = field(compare=False)
+    title: str
 
     def __str__(self) -> str:
         if not self.url:
@@ -260,11 +260,10 @@ def print_info(verbose: bool = False) -> None:
         versions = list(sorted(v.split(":")[1] for v in incident["codestreams"]))
         bugrefs: list[Reference] = [
             Reference(url=r["url"], title=titles.get(r["url"], ""))
-            for r in incident["incident"]["references"]
+            for r in sorted(incident["incident"]["references"], key=lambda i: i["url"])
             if not r["name"].startswith("CVE-")
         ]
         bugrefs = bugrefs or [Reference(url="", title="")]
-        bugrefs.sort()
         print(fmt.format(request, incident["packages"][0], versions[0], bugrefs[0]))
         for package, version, bugref in zip_longest(
             incident["packages"][1:],

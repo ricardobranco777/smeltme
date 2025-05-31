@@ -10,4 +10,4 @@ if [ "$1" = "--version" ] ; then
 	fi
 fi
 
-exec "$DOCKER" run --rm -e DEBUG "$IMAGE" "$@"
+exec "$DOCKER" run --rm -e DEBUG -e BUGZILLA_TOKEN -e JIRA_TOKEN "$IMAGE" "$@"

@@ -27,6 +27,11 @@ MAX_ISSUES = 200
 TIMEOUT = 15
 VERSION = "1.9"
 
+ANSI_RESET = "\033[0m"
+ANSI_RED = "\033[31m"
+ANSI_GREEN = "\033[32m"
+
+is_tty = sys.stdout.isatty()
 session = requests.Session()
 
 
@@ -266,7 +271,7 @@ def print_info(routes: list[str], verbose: bool = False) -> None:
     if verbose:
         titles = get_titles(urls)
     package_width = max(8, max(len(p) for i in incidents for p in i["packages"]))
-    fmt = f"{{:<8}}  {{:<16}}  {{:{package_width}}}  {{:12}}  {{}}"
+    fmt = f"{{:<16}}  {{:{package_width}}}  {{:12}}  {{}}"
     for incident in incidents:
         if not incident["packages"] or incident["packages"][0] == "update-test-trivial":
             continue
@@ -276,6 +281,12 @@ def print_info(routes: list[str], verbose: bool = False) -> None:
                 str(incident["request_id"]),
             ]
         )
+        status = incident["status"]["name"]
+        if is_tty:
+            if status == "ready":
+                request = f"{ANSI_GREEN}{request}{ANSI_RESET}"
+            elif status == "declined":
+                request = f"{ANSI_RED}{request}{ANSI_RESET}"
         incident["packages"].sort()
         versions = list(sorted(v.split(":")[1] for v in incident["codestreams"]))
         bugrefs: list[Reference] = [
@@ -284,19 +295,14 @@ def print_info(routes: list[str], verbose: bool = False) -> None:
             if not r["name"].startswith("CVE-")
         ]
         bugrefs = bugrefs or [Reference(url="", title="")]
-        status = incident["status"]["name"]
-        print(
-            fmt.format(
-                status, request, incident["packages"][0], versions[0], bugrefs[0]
-            )
-        )
+        print(fmt.format(request, incident["packages"][0], versions[0], bugrefs[0]))
         for package, version, bugref in zip_longest(
             incident["packages"][1:],
             versions[1:],
             bugrefs[1:],
             fillvalue=" ",
         ):
-            print(fmt.format("", "", package, version, bugref))
+            print(fmt.format("", package, version, bugref))
 
 
 def main() -> None:

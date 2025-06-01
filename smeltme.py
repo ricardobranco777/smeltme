@@ -9,7 +9,7 @@ import sys
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
-from itertools import zip_longest
+from itertools import chain, zip_longest
 from urllib.parse import urlparse
 
 import requests
@@ -241,9 +241,9 @@ def get_all_incidents(routes: list[str]) -> list[dict]:
     """
     Get all incidents
     """
-    incidents = []
-    for route in routes:
-        incidents.extend(get_incidents(route))
+    with ThreadPoolExecutor(max_workers=len(routes)) as executor:
+        results = executor.map(get_incidents, routes)
+    incidents = list(chain.from_iterable(results))
     if incidents:
         incidents.sort(key=lambda i: str.casefold(i["packages"][0]))
     return incidents

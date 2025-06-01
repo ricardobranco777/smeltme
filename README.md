@@ -16,6 +16,7 @@ Docker image available at `ghcr.io/ricardobranco777/smeltme:latest`
 
 ```
   -h, --help            show this help message and exit
+  -c, --csv             CSV output (default: False)
   -r, --route {all,declined,ready,testing}
                         route to use (default: all)
   -v, --verbose         verbose. Show titles for URL's (default: False)

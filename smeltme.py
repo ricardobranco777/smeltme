@@ -230,6 +230,7 @@ def parse_opts():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
+    parser.add_argument("-c", "--csv", action="store_true", help="CSV output")
     parser.add_argument(
         "-r",
         "--route",
@@ -274,7 +275,7 @@ def get_versions(channels: list[str], codestreams: list[str]) -> list[str]:
     return list(sorted(set(versions) | curated))
 
 
-def print_info(routes: list[str], verbose: bool = False) -> None:
+def print_info(routes: list[str], csv: bool = False, verbose: bool = False) -> None:
     """
     Print information
     """
@@ -288,7 +289,7 @@ def print_info(routes: list[str], verbose: bool = False) -> None:
     ]
     urls = list(set(urls))
     titles = {}
-    if verbose:
+    if verbose and not csv:
         titles = get_titles(urls)
     package_width = max(8, max(len(p) for i in incidents for p in i["packages"]))
     fmt = f"{{:<16}}  {{:{package_width}}}  {{:16}} {{}}"
@@ -301,11 +302,10 @@ def print_info(routes: list[str], verbose: bool = False) -> None:
                 str(incident["request_id"]),
             ]
         )
-        status = incident["status"]["name"]
         if is_tty:
-            if status == "ready":
+            if incident["status"]["name"] == "ready":
                 request = f"{ANSI_GREEN}{request}{ANSI_RESET}"
-            elif status == "declined":
+            elif incident["status"]["name"] == "declined":
                 request = f"{ANSI_RED}{request}{ANSI_RESET}"
         incident["packages"].sort()
         versions = get_versions(incident["channellist"], incident["codestreams"])
@@ -315,14 +315,23 @@ def print_info(routes: list[str], verbose: bool = False) -> None:
             if not r["name"].startswith("CVE-")
         ]
         bugrefs = bugrefs or [Reference(url="", title="")]
-        print(fmt.format(request, incident["packages"][0], versions[0], bugrefs[0]))
-        for package, version, bugref in zip_longest(
-            incident["packages"][1:],
-            versions[1:],
-            bugrefs[1:],
-            fillvalue=" ",
-        ):
-            print(fmt.format("", package, version, bugref))
+        if csv:
+            print(
+                request,
+                " ".join(incident["packages"]),
+                " ".join(versions),
+                " ".join(str(b) for b in bugrefs),
+                sep=",",
+            )
+        else:
+            print(fmt.format(request, incident["packages"][0], versions[0], bugrefs[0]))
+            for package, version, bugref in zip_longest(
+                incident["packages"][1:],
+                versions[1:],
+                bugrefs[1:],
+                fillvalue=" ",
+            ):
+                print(fmt.format("", package, version, bugref))
 
 
 def main() -> None:
@@ -337,7 +346,7 @@ def main() -> None:
         routes = ["tested_declined", "tested_ready", "testing"]
     else:
         routes = [opts.route]
-    print_info(routes=routes, verbose=opts.verbose)
+    print_info(routes, csv=opts.csv, verbose=opts.verbose)
 
 
 if __name__ == "__main__":

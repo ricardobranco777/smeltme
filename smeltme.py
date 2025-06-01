@@ -4,6 +4,7 @@ smeltme
 """
 
 import argparse
+import re
 import os
 import sys
 from collections import defaultdict
@@ -30,6 +31,10 @@ VERSION = "1.9"
 ANSI_RESET = "\033[0m"
 ANSI_RED = "\033[31m"
 ANSI_GREEN = "\033[32m"
+
+PRODUCTS = re.compile(
+    r"(SLE|SUSE-MicroOS)-(?:Module|Product|HA|SAP|SERVER).*?_(1[25](?:-SP\d)).*"
+)
 
 is_tty = sys.stdout.isatty()
 session = requests.Session()
@@ -254,6 +259,21 @@ def get_all_incidents(routes: list[str]) -> list[dict]:
     return incidents
 
 
+def get_versions(channels: list[str], codestreams: list[str]) -> list[str]:
+    """
+    Get product versions from list of channels & codestreams
+    """
+    versions: list[str] = list(sorted(c.split(":")[1] for c in codestreams))
+    curated = {
+        PRODUCTS.sub(r"\1-\2", channel)
+        for channel in channels
+        if "SP" in channel or "Micro" in channel
+    }
+    # Use SLE-Micro for everything
+    curated = {m.replace("SUSE-MicroOS", "SLE-Micro") for m in curated}
+    return list(sorted(set(versions) | curated))
+
+
 def print_info(routes: list[str], verbose: bool = False) -> None:
     """
     Print information
@@ -271,7 +291,7 @@ def print_info(routes: list[str], verbose: bool = False) -> None:
     if verbose:
         titles = get_titles(urls)
     package_width = max(8, max(len(p) for i in incidents for p in i["packages"]))
-    fmt = f"{{:<16}}  {{:{package_width}}}  {{:12}}  {{}}"
+    fmt = f"{{:<16}}  {{:{package_width}}}  {{:16}} {{}}"
     for incident in incidents:
         if not incident["packages"] or incident["packages"][0] == "update-test-trivial":
             continue
@@ -288,7 +308,7 @@ def print_info(routes: list[str], verbose: bool = False) -> None:
             elif status == "declined":
                 request = f"{ANSI_RED}{request}{ANSI_RESET}"
         incident["packages"].sort()
-        versions = list(sorted(v.split(":")[1] for v in incident["codestreams"]))
+        versions = get_versions(incident["channellist"], incident["codestreams"])
         bugrefs: list[Reference] = [
             Reference(url=r["url"], title=titles.get(r["url"], ""))
             for r in sorted(incident["incident"]["references"], key=lambda i: i["url"])

@@ -221,17 +221,24 @@ def parse_opts():
         "-v",
         "--verbose",
         action="store_true",
-        help="verbose. Show titles for URL",
+        help="verbose. Show titles for URL's",
+    )
+    parser.add_argument(
+        "-r",
+        "--route",
+        default="testing",
+        choices=["declined", "ready", "testing"],
+        help="route to use",
     )
     parser.add_argument("--version", action="version", version=VERSION)
     return parser.parse_args()
 
 
-def print_info(verbose: bool = False) -> None:
+def print_info(route: str = "testing", verbose: bool = False) -> None:
     """
     Print information
     """
-    incidents = get_incidents()
+    incidents = get_incidents(route)
     if incidents is None:
         return
     incidents.sort(key=lambda i: str.casefold(i["packages"][0]))
@@ -280,7 +287,9 @@ def main() -> None:
     Main function
     """
     opts = parse_opts()
-    print_info(verbose=opts.verbose)
+    if opts.route in {"declined", "ready"}:
+        opts.route = f"tested_{opts.route}"
+    print_info(route=opts.route, verbose=opts.verbose)
 
 
 if __name__ == "__main__":

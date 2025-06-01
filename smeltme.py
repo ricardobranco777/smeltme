@@ -94,20 +94,21 @@ def get_json(
     return data
 
 
-def get_incidents(route: str = "testing") -> list[dict] | None:
+def get_incidents(route: str) -> list[dict]:
     """
     Get incidents
     """
+    results: list[dict] = []
     url = f"https://smelt.suse.de/api/v1/overview/{route}/"
     data = get_json(url)
     if data is None:
-        return None
+        return results
     assert isinstance(data, dict)
-    results = data["results"]
+    results.extend(data["results"])
     while data["next"]:
         data = get_json(data["next"])
         if data is None:
-            return None
+            return results
         assert isinstance(data, dict)
         results.extend(data["results"])
     return results
@@ -216,32 +217,43 @@ def parse_opts():
     """
     Parse options and arguments
     """
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument(
+        "-r",
+        "--route",
+        default="all",
+        choices=["all", "declined", "ready", "testing"],
+        help="route to use",
+    )
     parser.add_argument(
         "-v",
         "--verbose",
         action="store_true",
         help="verbose. Show titles for URL's",
     )
-    parser.add_argument(
-        "-r",
-        "--route",
-        default="testing",
-        choices=["declined", "ready", "testing"],
-        help="route to use",
-    )
     parser.add_argument("--version", action="version", version=VERSION)
     return parser.parse_args()
 
 
-def print_info(route: str = "testing", verbose: bool = False) -> None:
+def get_all_incidents(routes: list[str]) -> list[dict]:
+    """
+    Get all incidents
+    """
+    incidents = []
+    for route in routes:
+        incidents.extend(get_incidents(route))
+    if incidents:
+        incidents.sort(key=lambda i: str.casefold(i["packages"][0]))
+    return incidents
+
+
+def print_info(routes: list[str], verbose: bool = False) -> None:
     """
     Print information
     """
-    incidents = get_incidents(route)
-    if incidents is None:
-        return
-    incidents.sort(key=lambda i: str.casefold(i["packages"][0]))
+    incidents = get_all_incidents(routes)
     # Filter CVE's since we track them on Bugzilla
     urls = [
         r["url"]
@@ -254,7 +266,7 @@ def print_info(route: str = "testing", verbose: bool = False) -> None:
     if verbose:
         titles = get_titles(urls)
     package_width = max(8, max(len(p) for i in incidents for p in i["packages"]))
-    fmt = f"{{:<16}}  {{:{package_width}}}  {{:12}}  {{}}"
+    fmt = f"{{:<8}}  {{:<16}}  {{:{package_width}}}  {{:12}}  {{}}"
     for incident in incidents:
         if not incident["packages"] or incident["packages"][0] == "update-test-trivial":
             continue
@@ -272,14 +284,19 @@ def print_info(route: str = "testing", verbose: bool = False) -> None:
             if not r["name"].startswith("CVE-")
         ]
         bugrefs = bugrefs or [Reference(url="", title="")]
-        print(fmt.format(request, incident["packages"][0], versions[0], bugrefs[0]))
+        status = incident["status"]["name"]
+        print(
+            fmt.format(
+                status, request, incident["packages"][0], versions[0], bugrefs[0]
+            )
+        )
         for package, version, bugref in zip_longest(
             incident["packages"][1:],
             versions[1:],
             bugrefs[1:],
             fillvalue=" ",
         ):
-            print(fmt.format("", package, version, bugref))
+            print(fmt.format("", "", package, version, bugref))
 
 
 def main() -> None:
@@ -287,9 +304,14 @@ def main() -> None:
     Main function
     """
     opts = parse_opts()
+    routes: list[str]
     if opts.route in {"declined", "ready"}:
-        opts.route = f"tested_{opts.route}"
-    print_info(route=opts.route, verbose=opts.verbose)
+        routes = [f"tested_{opts.route}"]
+    elif opts.route == "all":
+        routes = ["tested_declined", "tested_ready", "testing"]
+    else:
+        routes = [opts.route]
+    print_info(routes=routes, verbose=opts.verbose)
 
 
 if __name__ == "__main__":

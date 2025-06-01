@@ -16,8 +16,8 @@ Docker image available at `ghcr.io/ricardobranco777/smeltme:latest`
 
 ```
   -h, --help            show this help message and exit
-  -r, --route {declined,ready,testing}
-                        route to use
-  -v, --verbose         verbose. Show titles for URL's
+  -r, --route {all,declined,ready,testing}
+                        route to use (default: all)
+  -v, --verbose         verbose. Show titles for URL's (default: False)
   --version             show program's version number and exit
 ```

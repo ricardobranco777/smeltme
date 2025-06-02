@@ -12,6 +12,13 @@ Docker image available at `ghcr.io/ricardobranco777/smeltme:latest`
 - python3-requests
 - python3-requests-toolbelt (optional for debugging)
 
+## Tokens
+
+To make the `-v` option work you need to have these variables setup in your environment:
+
+- `BUGZILLA_TOKEN`
+- `JIRA_TOKEN`
+
 ## Options
 
 ```

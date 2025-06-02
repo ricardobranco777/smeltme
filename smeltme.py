@@ -315,7 +315,9 @@ def print_info(  # pylint: disable=too-many-locals
             }
         )
     package_width = max(8, max(len(p) for i in incidents for p in i["packages"] if p))
-    fmt = f"{{:16}}  {{:{package_width}}}  {{:16}} {{}}"
+    fmt = "{:16}" if incidents[0]["incident"] else "{:6}"
+    fmt += f"  {{:{package_width}}}  {{:16}} {{}}"
+    print(fmt)
     for incident in incidents:
         packages: list[str] = list(sorted(filter(None, incident["packages"])))
         if not packages or packages[0] == "update-test-trivial":

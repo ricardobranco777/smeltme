@@ -24,8 +24,9 @@ To make the `-v` option work you need to have these variables setup in your envi
 ```
   -h, --help            show this help message and exit
   -c, --csv             CSV output
-  -r, --route {all,declined,ready,testing}
+  -r, --route {all,declined,ready,review,testing}
                         May be specified multiple times. Default: all
+  -s, --submission      Show submissions instead of requests
   -v, --verbose         verbose. Show titles for URL's
   --version             show program's version number and exit
 ```

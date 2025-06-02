@@ -108,8 +108,6 @@ def get_incidents(route: str) -> list[dict]:
     """
     Get incidents
     """
-    if route in {"declined", "ready"}:
-        route = f"tested_{route}"
     results: list[dict] = []
     url = f"https://smelt.suse.de/api/v1/overview/{route}/"
     data = get_json(url)
@@ -193,7 +191,7 @@ def get_jira_issues(urls: list[str]) -> list[Issue] | None:
     return issues
 
 
-def get_titles(urls: list[str]) -> dict[str, str]:
+def get_titles(urls: set[str]) -> dict[str, str]:
     """
     Get titles of issues
     """
@@ -235,8 +233,20 @@ def parse_opts():
         "-r",
         "--route",
         action="append",
-        choices=["all", "declined", "ready", "testing"],
+        choices=[
+            "all",
+            "declined",
+            "ready",
+            "review",
+            "testing",
+        ],
         help="May be specified multiple times. Default: all",
+    )
+    parser.add_argument(
+        "-s",
+        "--submission",
+        action="store_true",
+        help="Show submissions instead of requests",
     )
     parser.add_argument(
         "-v",
@@ -275,58 +285,73 @@ def get_versions(channels: list[str], codestreams: list[str]) -> list[str]:
     return list(sorted(set(versions) | curated))
 
 
-def print_info(routes: list[str], csv: bool = False, verbose: bool = False) -> None:
+def get_references(incident: dict) -> list[dict]:
     """
-    Print information
+    Get references for incident or submission
+    """
+    if incident["incident"]:
+        return incident["incident"]["references"]
+    return incident["references"]
+
+
+def print_info(  # pylint: disable=too-many-locals
+    routes: list[str], csv: bool = False, verbose: bool = False
+) -> None:
+    """
+    Print requests
     """
     incidents = get_all_incidents(routes)
+    if not incidents:
+        return
     # Filter CVE's since we track them on Bugzilla
-    urls = [
-        r["url"]
-        for i in incidents
-        for r in i["incident"]["references"]
-        if not r["name"].startswith("CVE-")
-    ]
-    urls = list(set(urls))
     titles = {}
     if verbose and not csv:
-        titles = get_titles(urls)
-    package_width = max(8, max(len(p) for i in incidents for p in i["packages"]))
-    fmt = f"{{:<16}}  {{:{package_width}}}  {{:16}} {{}}"
-    for incident in incidents:
-        if not incident["packages"] or incident["packages"][0] == "update-test-trivial":
-            continue
-        request = ":".join(
-            [
-                incident["incident"]["project"].replace("SUSE:Maintenance", "S:M"),
-                str(incident["request_id"]),
-            ]
+        titles = get_titles(
+            {
+                r["url"]
+                for i in incidents
+                for r in get_references(i)
+                if not r["name"].startswith("CVE-")
+            }
         )
-        if is_tty:
-            if incident["status"]["name"] == "ready":
-                request = f"{ANSI_GREEN}{request}{ANSI_RESET}"
-            elif incident["status"]["name"] == "declined":
-                request = f"{ANSI_RED}{request}{ANSI_RESET}"
-        incident["packages"].sort()
+    package_width = max(8, max(len(p) for i in incidents for p in i["packages"] if p))
+    fmt = f"{{:16}}  {{:{package_width}}}  {{:16}} {{}}"
+    for incident in incidents:
+        packages: list[str] = list(sorted(filter(None, incident["packages"])))
+        if not packages or packages[0] == "update-test-trivial":
+            continue
+        request = str(incident["request_id"])
+        status = incident["status"]["name"]
         versions = get_versions(incident["channellist"], incident["codestreams"])
+        if incident["incident"]:
+            incident = incident["incident"]
+        if "project" in incident:
+            request = (
+                incident["project"].replace("SUSE:Maintenance", "S:M") + ":" + request
+            )
+        if is_tty and len(routes) > 1:
+            if status == "ready":
+                request = f"{ANSI_GREEN}{request}{ANSI_RESET}"
+            elif status == "declined":
+                request = f"{ANSI_RED}{request}{ANSI_RESET}"
         bugrefs: list[Reference] = [
             Reference(url=r["url"], title=titles.get(r["url"], ""))
-            for r in sorted(incident["incident"]["references"], key=lambda i: i["url"])
+            for r in sorted(incident["references"], key=lambda i: i["url"])
             if not r["name"].startswith("CVE-")
         ]
         bugrefs = bugrefs or [Reference(url="", title="")]
         if csv:
             print(
                 request,
-                " ".join(incident["packages"]),
+                " ".join(packages),
                 " ".join(versions),
                 " ".join(str(b) for b in bugrefs),
                 sep=",",
             )
         else:
-            print(fmt.format(request, incident["packages"][0], versions[0], bugrefs[0]))
+            print(fmt.format(request, packages[0], versions[0], bugrefs[0]))
             for package, version, bugref in zip_longest(
-                incident["packages"][1:],
+                packages[1:],
                 versions[1:],
                 bugrefs[1:],
                 fillvalue=" ",
@@ -339,13 +364,23 @@ def main() -> None:
     Main function
     """
     opts = parse_opts()
-    routes: list[str] = opts.route or ["all"]
-    for route in routes:
+    opts.route = opts.route or ["all"]
+    routes = []
+    for route in opts.route:
         if route == "all":
-            routes = ["declined", "ready", "testing"]
+            if opts.submission:
+                routes = ["submission_ready", "submission_review"]
+            else:
+                routes = ["tested_declined", "tested_ready", "testing"]
             break
-    else:
-        routes = list(set(routes))
+        if opts.submission:
+            if route in {"ready", "review"}:
+                route = f"submission_{route}"
+        else:
+            if route in {"declined", "ready"}:
+                route = f"tested_{route}"
+        routes.append(route)
+    routes = list(set(routes))
     print_info(routes, csv=opts.csv, verbose=opts.verbose)
 
 

@@ -23,9 +23,9 @@ To make the `-v` option work you need to have these variables setup in your envi
 
 ```
   -h, --help            show this help message and exit
-  -c, --csv             CSV output (default: False)
+  -c, --csv             CSV output
   -r, --route {all,declined,ready,testing}
-                        route to use (default: all)
-  -v, --verbose         verbose. Show titles for URL's (default: False)
+                        May be specified multiple times. Default: all
+  -v, --verbose         verbose. Show titles for URL's
   --version             show program's version number and exit
 ```

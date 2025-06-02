@@ -108,6 +108,8 @@ def get_incidents(route: str) -> list[dict]:
     """
     Get incidents
     """
+    if route in {"declined", "ready"}:
+        route = f"tested_{route}"
     results: list[dict] = []
     url = f"https://smelt.suse.de/api/v1/overview/{route}/"
     data = get_json(url)
@@ -227,16 +229,14 @@ def parse_opts():
     """
     Parse options and arguments
     """
-    parser = argparse.ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
+    parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--csv", action="store_true", help="CSV output")
     parser.add_argument(
         "-r",
         "--route",
-        default="all",
+        action="append",
         choices=["all", "declined", "ready", "testing"],
-        help="route to use",
+        help="May be specified multiple times. Default: all",
     )
     parser.add_argument(
         "-v",
@@ -339,13 +339,13 @@ def main() -> None:
     Main function
     """
     opts = parse_opts()
-    routes: list[str]
-    if opts.route in {"declined", "ready"}:
-        routes = [f"tested_{opts.route}"]
-    elif opts.route == "all":
-        routes = ["tested_declined", "tested_ready", "testing"]
+    routes: list[str] = opts.route or ["all"]
+    for route in routes:
+        if route == "all":
+            routes = ["declined", "ready", "testing"]
+            break
     else:
-        routes = [opts.route]
+        routes = list(set(routes))
     print_info(routes, csv=opts.csv, verbose=opts.verbose)
 
 

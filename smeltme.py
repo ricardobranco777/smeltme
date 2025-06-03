@@ -33,7 +33,7 @@ ANSI_RED = "\033[31m"
 ANSI_GREEN = "\033[32m"
 
 PRODUCTS = re.compile(
-    r"(SLE|SUSE-MicroOS)-(?:Module|Product|HA|SAP|SERVER).*?_(1[25](?:-SP\d)).*"
+    r"(SLE|SUSE-MicroOS)-(?:INSTALLER|Module|Product|HA|SAP|SERVER).*?_(1[25](?:-SP\d)).*"
 )
 
 is_tty = sys.stdout.isatty()

@@ -52,15 +52,16 @@ class Reference:
     def __str__(self) -> str:
         if not self.url:
             return ""
-        # name sucks so we rebuild it here
-        tag = "".join([s[0] for s in str(urlparse(self.url).hostname).split(".")])
-        issue = (
-            self.url.split("=")[-1] if "=" in self.url else os.path.basename(self.url)
-        )
-        tag = f"{tag}#{issue}"
         if self.title:
+            tag = "".join([s[0] for s in str(urlparse(self.url).hostname).split(".")])
+            issue = (
+                self.url.split("=")[-1]
+                if "=" in self.url
+                else os.path.basename(self.url)
+            )
+            tag = f"{tag}#{issue}"
             return f"{tag:<13}  {self.title}"
-        return tag
+        return self.url
 
 
 @dataclass(frozen=True)

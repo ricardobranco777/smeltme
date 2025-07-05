@@ -324,7 +324,7 @@ def get_regex(
 def print_info(  # pylint: disable=too-many-locals
     routes: list[str],
     csv: bool = False,
-    regex: re.Pattern | None = None,
+    package_regex: re.Pattern | None = None,
     verbose: bool = False,
 ) -> None:
     """
@@ -333,6 +333,13 @@ def print_info(  # pylint: disable=too-many-locals
     incidents = get_all_incidents(routes)
     if not incidents:
         return
+    package_regex = package_regex or re.compile(r".*")
+    # Filter incidents by package regex if present
+    incidents = [
+        i
+        for i in incidents
+        if any(map(package_regex.search, filter(None, i["packages"])))
+    ]
     # Filter CVE's since we track them on Bugzilla
     titles = {}
     if verbose and not csv:
@@ -344,7 +351,7 @@ def print_info(  # pylint: disable=too-many-locals
                 if not r["name"].startswith("CVE-")
             }
         )
-    package_width = max(8, max(len(p) for i in incidents for p in i["packages"] if p))
+    package_width = max(len(p) for i in incidents for p in i["packages"] if p)
     fmt = "{:16}" if incidents[0]["incident"] else "{:6}"
     fmt += f"  {{:{package_width}}}  {{:16}} {{}}"
     for incident in incidents:
@@ -352,8 +359,7 @@ def print_info(  # pylint: disable=too-many-locals
         if (
             not packages
             or packages[0] == "update-test-trivial"
-            or regex
-            and not any(regex.search(p) for p in packages)
+            or not any(map(package_regex.search, filter(None, packages)))
         ):
             continue
         request = str(incident["request_id"])
@@ -417,8 +423,10 @@ def main() -> None:
                 route = f"tested_{route}"
         routes.append(route)
     routes = list(set(routes))
-    regex = get_regex(opts.package, ignore_case=opts.insensitive, regex=opts.regex)
-    print_info(routes, csv=opts.csv, regex=regex, verbose=opts.verbose)
+    package_regex = get_regex(
+        opts.package, ignore_case=opts.insensitive, regex=opts.regex
+    )
+    print_info(routes, csv=opts.csv, package_regex=package_regex, verbose=opts.verbose)
 
 
 if __name__ == "__main__":

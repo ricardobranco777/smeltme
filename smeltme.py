@@ -330,16 +330,16 @@ def print_info(  # pylint: disable=too-many-locals
     """
     Print requests
     """
-    incidents = get_all_incidents(routes)
-    if not incidents:
-        return
     package_regex = package_regex or re.compile(r".*")
+    incidents = get_all_incidents(routes)
     # Filter incidents by package regex if present
     incidents = [
         i
         for i in incidents
         if any(map(package_regex.search, filter(None, i["packages"])))
     ]
+    if not incidents:
+        return
     # Filter CVE's since we track them on Bugzilla
     titles = {}
     if verbose and not csv:

@@ -19,14 +19,20 @@ To make the `-v` option work you need to have these variables setup in your envi
 - `BUGZILLA_TOKEN`
 - `JIRA_TOKEN`
 
+## Usage
+
+`smeltme [-c] [-i] [-r {all,declined,ready,review,testing}] [-s] [-v] [-x] [package]`
+
 ## Options
 
 ```
   -h, --help            show this help message and exit
   -c, --csv             CSV output
+  -i, --insensitive     case insensitive search
   -r, --route {all,declined,ready,review,testing}
                         May be specified multiple times. Default: all
   -s, --submission      Show submissions instead of requests
   -v, --verbose         verbose. Show titles for URL's
+  -x, --regex           search regular expression
   --version             show program's version number and exit
 ```

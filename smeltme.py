@@ -4,6 +4,7 @@ smeltme
 """
 
 import argparse
+import fnmatch
 import re
 import os
 import sys
@@ -231,6 +232,9 @@ def parse_opts():
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--csv", action="store_true", help="CSV output")
     parser.add_argument(
+        "-i", "--insensitive", action="store_true", help="case insensitive search"
+    )
+    parser.add_argument(
         "-r",
         "--route",
         action="append",
@@ -255,7 +259,13 @@ def parse_opts():
         action="store_true",
         help="verbose. Show titles for URL's",
     )
+    parser.add_argument(
+        "-x", "--regex", action="store_true", help="search regular expression"
+    )
     parser.add_argument("--version", action="version", version=VERSION)
+    parser.add_argument(
+        "package", nargs="?", help="may be a shell pattern or regular expression"
+    )
     return parser.parse_args()
 
 
@@ -295,8 +305,27 @@ def get_references(incident: dict) -> list[dict]:
     return incident["references"]
 
 
+def get_regex(
+    package: str | None, ignore_case: bool = False, regex: bool = False
+) -> re.Pattern | None:
+    """
+    Compile package string to regular expression
+    """
+    if package is None:
+        return None
+    flags = re.IGNORECASE if ignore_case else 0
+    if regex:
+        return re.compile(package, flags)
+    if any(c in package for c in "[?*"):
+        return re.compile(fnmatch.translate(package), flags)
+    return re.compile(f"{package}$", flags)
+
+
 def print_info(  # pylint: disable=too-many-locals
-    routes: list[str], csv: bool = False, verbose: bool = False
+    routes: list[str],
+    csv: bool = False,
+    regex: re.Pattern | None = None,
+    verbose: bool = False,
 ) -> None:
     """
     Print requests
@@ -320,7 +349,12 @@ def print_info(  # pylint: disable=too-many-locals
     fmt += f"  {{:{package_width}}}  {{:16}} {{}}"
     for incident in incidents:
         packages: list[str] = list(sorted(filter(None, incident["packages"])))
-        if not packages or packages[0] == "update-test-trivial":
+        if (
+            not packages
+            or packages[0] == "update-test-trivial"
+            or regex
+            and not any(regex.search(p) for p in packages)
+        ):
             continue
         request = str(incident["request_id"])
         status = incident["status"]["name"]
@@ -383,7 +417,8 @@ def main() -> None:
                 route = f"tested_{route}"
         routes.append(route)
     routes = list(set(routes))
-    print_info(routes, csv=opts.csv, verbose=opts.verbose)
+    regex = get_regex(opts.package, ignore_case=opts.insensitive, regex=opts.regex)
+    print_info(routes, csv=opts.csv, regex=regex, verbose=opts.verbose)
 
 
 if __name__ == "__main__":

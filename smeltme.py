@@ -307,30 +307,29 @@ def get_references(incident: dict) -> list[dict]:
 
 def get_regex(
     package: str | None, ignore_case: bool = False, regex: bool = False
-) -> re.Pattern | None:
+) -> re.Pattern:
     """
     Compile package string to regular expression
     """
     if package is None:
-        return None
+        return re.compile(r".*")
     flags = re.IGNORECASE if ignore_case else 0
     if regex:
         return re.compile(package, flags)
     if any(c in package for c in "[?*"):
         return re.compile(fnmatch.translate(package), flags)
-    return re.compile(f"{package}$", flags)
+    return re.compile(f"^{package}$", flags)
 
 
 def print_info(  # pylint: disable=too-many-locals
     routes: list[str],
+    package_regex: re.Pattern,
     csv: bool = False,
-    package_regex: re.Pattern | None = None,
     verbose: bool = False,
 ) -> None:
     """
     Print requests
     """
-    package_regex = package_regex or re.compile(r".*")
     incidents = get_all_incidents(routes)
     # Filter incidents by package regex if present
     incidents = [
@@ -426,7 +425,7 @@ def main() -> None:
     package_regex = get_regex(
         opts.package, ignore_case=opts.insensitive, regex=opts.regex
     )
-    print_info(routes, csv=opts.csv, package_regex=package_regex, verbose=opts.verbose)
+    print_info(routes, package_regex=package_regex, csv=opts.csv, verbose=opts.verbose)
 
 
 if __name__ == "__main__":

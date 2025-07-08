@@ -321,6 +321,17 @@ def get_regex(
     return re.compile(f"^{package}$", flags)
 
 
+def sort_url(url: str) -> tuple[str, int]:
+    """
+    Key for numeric sort of URL's ending with digits
+    """
+    try:
+        base, issue_id, _ = re.split(r"([0-9]+)$", url, maxsplit=1)
+        return base, int(issue_id)
+    except ValueError:
+        return url, 0
+
+
 def print_info(  # pylint: disable=too-many-locals
     routes: list[str],
     package_regex: re.Pattern,
@@ -377,7 +388,7 @@ def print_info(  # pylint: disable=too-many-locals
                 request = f"{ANSI_RED}{request}{ANSI_RESET}"
         bugrefs: list[Reference] = [
             Reference(url=r["url"], title=titles.get(r["url"], ""))
-            for r in sorted(incident["references"], key=lambda i: i["url"])
+            for r in sorted(incident["references"], key=lambda i: sort_url(i["url"]))
             if not r["name"].startswith("CVE-")
         ]
         bugrefs = bugrefs or [Reference(url="", title="")]

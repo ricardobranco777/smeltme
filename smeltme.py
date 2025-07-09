@@ -34,7 +34,7 @@ ANSI_RED = "\033[31m"
 ANSI_GREEN = "\033[32m"
 
 PRODUCTS = re.compile(
-    r"(SLE|SUSE-MicroOS)-(?:INSTALLER|Module|Product|HA|SAP|SERVER).*?_(1[125](?:-SP\d)).*"
+    r"(SLE|SUSE-MicroOS)-(?:INSTALLER|Live-Patching|Module|Product|HA|SAP|SERVER).*?_(1[125](?:-SP\d)).*"
 )
 
 is_tty = sys.stdout.isatty()
@@ -289,7 +289,7 @@ def get_versions(channels: list[str], codestreams: list[str]) -> list[str]:
     curated = {
         PRODUCTS.sub(r"\1-\2", channel)
         for channel in channels
-        if "SP" in channel or "Micro" in channel
+        if ("SP" in channel or "Micro" in channel) and "Manager" not in channel
     }
     # Use SLE-Micro for everything
     curated = {m.replace("SUSE-MicroOS", "SLE-Micro") for m in curated}

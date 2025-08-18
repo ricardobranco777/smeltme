@@ -162,6 +162,23 @@ def get_bugzilla_issues(host: str, urls: list[str]) -> list[Issue] | None:
     return issues
 
 
+def get_jira_issue(url: str) -> Issue | None:
+    """
+    Get Jira issue
+    """
+    if not JIRA_TOKEN:
+        return None
+    issue = os.path.basename(url)
+    api_url = f"https://jira.suse.com/rest/api/2/issue/{issue}"
+    headers = {"Authorization": f"Bearer {JIRA_TOKEN}"}
+    params = {"fields": "summary"}
+    data = get_json(api_url, headers=headers, params=params)
+    if data is None:
+        return None
+    assert isinstance(data, dict)
+    return Issue(url=url, title=data["fields"]["summary"])
+
+
 def get_jira_issues(urls: list[str]) -> list[Issue] | None:
     """
     Get Jira issues
@@ -169,7 +186,7 @@ def get_jira_issues(urls: list[str]) -> list[Issue] | None:
     if not JIRA_TOKEN:
         return None
     issue_ids = [os.path.basename(u) for u in urls]
-    url = "https://jira.suse.com/rest/api/2/search"
+    api_url = "https://jira.suse.com/rest/api/2/search"
     headers = {"Authorization": f"Bearer {JIRA_TOKEN}"}
     issues: list[Issue] = []
     for issue_id in range(0, len(issue_ids), MAX_ISSUES):
@@ -177,7 +194,7 @@ def get_jira_issues(urls: list[str]) -> list[Issue] | None:
             "fields": "summary",
             "jql": f"key in ({','.join(issue_ids[issue_id : issue_id + MAX_ISSUES])})",
         }
-        data = get_json(url, headers=headers, params=params, key="issues")
+        data = get_json(api_url, headers=headers, params=params, key="issues")
         if data is None:
             return None
         assert isinstance(data, list)
@@ -190,6 +207,13 @@ def get_jira_issues(urls: list[str]) -> list[Issue] | None:
                 for i in data
             ]
         )
+    # Some Jira issues may be missing because they were renamed, etc
+    missing = [u for u in urls if u not in set(i.url for i in issues)]
+    if missing:
+        with ThreadPoolExecutor() as executor:
+            for issue in executor.map(get_jira_issue, missing):
+                if issue is not None:
+                    issues.append(issue)
     return issues
 
 

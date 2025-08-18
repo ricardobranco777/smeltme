@@ -132,12 +132,12 @@ def get_bugzilla_issues(host: str, urls: list[str]) -> list[Issue] | None:
     """
     if not BUGZILLA_TOKEN and host in ("bugzilla.suse.com", "bugzilla.opensuse.org"):
         return None
-    ids = [u.split("=")[-1] for u in urls]
+    issue_ids = [u.split("=")[-1] for u in urls]
     url = f"https://{host}/rest/bug"
     issues: list[Issue] = []
-    for i in range(0, len(ids), MAX_ISSUES):
+    for issue_id in range(0, len(issue_ids), MAX_ISSUES):
         params = {
-            "id": ids[i : i + MAX_ISSUES],
+            "id": issue_ids[issue_id : issue_id + MAX_ISSUES],
             "include_fields": "id,summary",
         }
         if host in ("bugzilla.suse.com", "bugzilla.opensuse.org"):
@@ -168,14 +168,14 @@ def get_jira_issues(urls: list[str]) -> list[Issue] | None:
     """
     if not JIRA_TOKEN:
         return None
-    ids = [os.path.basename(u) for u in urls]
+    issue_ids = [os.path.basename(u) for u in urls]
     url = "https://jira.suse.com/rest/api/2/search"
     headers = {"Authorization": f"Bearer {JIRA_TOKEN}"}
     issues: list[Issue] = []
-    for i in range(0, len(ids), MAX_ISSUES):
+    for issue_id in range(0, len(issue_ids), MAX_ISSUES):
         params = {
             "fields": "summary",
-            "jql": f"key in ({','.join(ids[i : i + MAX_ISSUES])})",
+            "jql": f"key in ({','.join(issue_ids[issue_id : issue_id + MAX_ISSUES])})",
         }
         data = get_json(url, headers=headers, params=params, key="issues")
         if data is None:

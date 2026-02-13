@@ -356,7 +356,7 @@ def sort_url(url: str) -> tuple[str, int]:
         return url, 0
 
 
-def print_info(  # pylint: disable=too-many-locals
+def print_info(  # pylint: disable=too-many-branches,too-many-locals
     routes: list[str],
     package_regex: re.Pattern,
     csv: bool = False,
@@ -415,6 +415,15 @@ def print_info(  # pylint: disable=too-many-locals
             for r in sorted(incident["references"], key=lambda i: sort_url(i["url"]))
             if not r["name"].startswith("CVE-")
         ]
+        # Print at least CVE's if the above list is empty
+        if not bugrefs:
+            bugrefs = [
+                Reference(url=r["url"], title=titles.get(r["url"], ""))
+                for r in sorted(
+                    incident["references"], key=lambda i: sort_url(i["url"])
+                )
+                if r["name"].startswith("CVE-")
+            ]
         bugrefs = bugrefs or [Reference(url="", title="")]
         if csv:
             print(

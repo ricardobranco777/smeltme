@@ -85,17 +85,12 @@ def debugme(got, *args, **kwargs):  # pylint: disable=unused-argument
     return got
 
 
-def get_json(
-    url: str,
-    headers: dict | None = None,
-    params: dict | None = None,
-    key: str | None = None,
-) -> dict | list[dict] | None:
+def get_json(url: str, key: str | None = None, **kwargs) -> dict | list[dict] | None:
     """
     Get JSON
     """
     try:
-        got = session.get(url, headers=headers, params=params, timeout=TIMEOUT)
+        got = session.get(url, timeout=TIMEOUT, **kwargs)
         got.raise_for_status()
         data = got.json()
     except RequestException as error:

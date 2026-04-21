@@ -39,6 +39,7 @@ PRODUCTS = re.compile(
 
 is_tty = sys.stdout.isatty()
 session = requests.Session()
+session.headers.update({"User-Agent": "smeltme"})
 
 
 @dataclass(frozen=True)
